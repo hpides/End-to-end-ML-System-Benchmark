@@ -3,11 +3,12 @@ import argparse
 import os
 import torch
 import re
+import numpy as np
 
 parser = argparse.ArgumentParser()
 parser.add_argument('-s', '--size', dest='rows_in_memory', type=int, default=None,
                     help="maximum amount of rows that is kept in memory at any time, None if no such limitation")
-parser.add_argument('-t', '--target', dest='target', default='pytorch', choices=['pytorch', 'numpy', 'tensorflow'],
+parser.add_argument('-t', '--target', dest='target', default='numpy', choices=['pytorch', 'numpy'],
                     help='format of saved feature tensors')
 args = parser.parse_args()
 
@@ -21,6 +22,9 @@ def feature_extract(df):
 def save_features_to_file(df, write_path):
     if args.target == 'pytorch':
         torch.save(torch.tensor(feature_extract(df).values), write_path)
+    if args.target == 'numpy':
+        np.save(write_path, feature_extract(df).values)
+
 
 def parse_and_save_files():
     os.mkdir(features_path)
