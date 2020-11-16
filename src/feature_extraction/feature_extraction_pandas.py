@@ -8,6 +8,7 @@ import numpy as np
 raw_data_path = "../../data/raw"
 features_path = "../../data/features.csv"
 labels_path = "../../data/labels.csv"
+normalized_path = "../../data/normalized.csv"
 
 feature_cols = {'date': str, 'serial_number': str,
                 'smart_197_raw': 'float', 'smart_9_raw': 'float', 'smart_241_raw': 'float', 'smart_187_raw': 'float'}
@@ -27,18 +28,18 @@ def write_feature_columns_to_csv():
 
 def normalization():
     features = pd.read_csv(features_path)
-
-    col_means = features.mean(axis=0)
-    col_stddevs = features.std(axis=0)
+    smart_col_names = ['smart_197_raw', 'smart_9_raw', 'smart_241_raw', 'smart_187_raw']
+    smart_means = features[smart_col_names].mean(axis=0)
+    smart_stddevs = features[smart_col_names].std(axis=0)
 
     #replace nan values with column means
-    features.fillna(col_means, inplace=True)
+    features.fillna(smart_means, inplace=True)
 
     #normalize to standard normal distribution
-    features = (features - col_means) / col_stddevs
+    features[smart_col_names] = (features[smart_col_names] - smart_means) / smart_stddevs
 
-    features.to_csv(features_path, mode='a', append=True)
+    features.to_csv(normalized_path, index=None)
 
 if __name__ == "__main__":
     write_feature_columns_to_csv()
-    pass
+    normalization()
