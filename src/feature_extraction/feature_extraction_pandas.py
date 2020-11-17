@@ -26,8 +26,25 @@ def filter_columns_and_write_back():
         header = not os.path.isfile(features_path)
         features.to_csv(features_path, mode='a', index=None, header=header)
 
+def add_failure_columns_to_df_with_one_serial_number(df, num_look_ahead_days):
+    entry_count = len(df)
+
+    if df.failure.any():
+        df.sort_values('date', inplace=True)
+        df.drop(columns=['failure'], inplace=True)
+        ones = np.ones((entry_count, num_look_ahead_days))
+        float_triangle = np.fliplr(np.tril(ones, num_look_ahead_days - entry_count))
+        bool_values = float_triangle != 0
+    else:
+        bool_values = np.zeros((entry_count, num_look_ahead_days)) != 0
+
+    col_names = [f"fails_within_{i}_days" for i in range(1, num_look_ahead_days + 1)]
+    failure_features = pd.DataFrame(data=bool_values, columns=col_names)
+
+    return pd.concat([df, failure_features], axis=1)
+
 def normalization_and_additional_failure_columns():
-    features = pd.read_csv(features_path, parse_dates=['date'])
+    features = pd.read_csv('../../data/features_test.csv', parse_dates=['date'])
     print('CSV read finished')
 
     smart_col_names = ['smart_197_raw', 'smart_9_raw', 'smart_241_raw', 'smart_187_raw']
@@ -43,19 +60,15 @@ def normalization_and_additional_failure_columns():
     print('Normalization finished')
 
     #add failure columns
-    days_to_look_ahead = 5
-    features.rename(columns={'failure': 'fails_within_0_days'}, inplace=True)
-    for i in range(1, days_to_look_ahead + 1):
-        fails_within_next_i_days = features[['serial_number', 'date', "fails_within_0_days"]].rename(
-            columns={"fails_within_0_days": f"fails_within_{i}_days"})
-        fails_within_next_i_days.date = fails_within_next_i_days.date - pd.Timedelta(days=i)
-        fails_within_next_i_days[f"fails_within_{i}_days"] |= features[f"fails_within_{i-1}_days"]
-        features = pd.merge(features, fails_within_next_i_days, on=['serial_number', 'date'])
-        print(f"Lookahead day {i} merged")
+    num_look_ahead_days = 5
+    grouped_by_serial_number = features.groupby('serial_number')
 
-    features.to_csv(normalized_path, index=None)
+    features_with_failure_columns = grouped_by_serial_number.apply(
+        lambda df: add_failure_columns_to_df_with_one_serial_number(df, num_look_ahead_days))
+
+    features_with_failure_columns.to_csv(normalized_path, index=None)
     print('Final features file written')
 
 if __name__ == "__main__":
-    filter_columns_and_write_back()
+    #filter_columns_and_write_back()
     normalization_and_additional_failure_columns()
