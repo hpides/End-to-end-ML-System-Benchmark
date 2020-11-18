@@ -1,12 +1,9 @@
-import sys
-from functools import reduce
-
+from tqdm import tqdm
 import pandas as pd
-import argparse
 import os
-import torch
-import re
 import numpy as np
+import time
+import json
 
 raw_data_path = "../../data/raw"
 features_path = "../../data/features.csv"
@@ -17,36 +14,51 @@ feature_cols = {'date': str, 'serial_number': str,
                 'smart_197_raw': 'float', 'smart_9_raw': 'float', 'smart_241_raw': 'float', 'smart_187_raw': 'float',
                 'failure': 'bool'}
 
+time_measuring_data = dict()
+
 def filter_columns_and_write_back():
-    for i, read_filename in enumerate(os.listdir(raw_data_path)):
-        print(f"Parsing file {i} out of {len(os.listdir(raw_data_path))}")
-        read_filepath = os.path.join(raw_data_path, read_filename)
-        df = pd.read_csv(read_filepath)
-        features = df[feature_cols.keys()].astype(feature_cols)
-        header = not os.path.isfile(features_path)
-        features.to_csv(features_path, mode='a', index=None, header=header)
+    start = time.time()
+    read_files = os.listdir(raw_data_path)
+    with tqdm(total=len(read_files)) as progress_bar:
+        for read_filename in read_files:
+            progress_bar.update()
+            progress_bar.set_description(f"Parsing raw file {progress_bar.n}/{progress_bar.total}: {read_filename}")
+            read_filepath = os.path.join(raw_data_path, read_filename)
+            df = pd.read_csv(read_filepath)
+            features = df[feature_cols.keys()].astype(feature_cols)
+            header = not os.path.isfile(features_path)
+            features.to_csv(features_path, mode='a', index=None, header=header)
+    end = time.time()
+    time_measuring_data['time_parse_raw_files'] = end - start
 
-def add_failure_columns_to_df_with_one_serial_number(df, num_look_ahead_days):
-    entry_count = len(df)
+def add_lookahead_failure_cols_to_group(group, num_look_ahead_days):
+    copy = group.copy()
+    entry_count = len(copy)
 
-    if df.failure.any():
-        df.sort_values('date', inplace=True)
-        df.drop(columns=['failure'], inplace=True)
+    if copy.failure.any():
+        copy.sort_values('date', inplace=True)
         ones = np.ones((entry_count, num_look_ahead_days))
-        float_triangle = np.fliplr(np.tril(ones, num_look_ahead_days - entry_count))
-        bool_values = float_triangle != 0
+        failure_values_float = np.fliplr(np.tril(ones, num_look_ahead_days - entry_count))
+        failure_values_bool = failure_values_float != 0
     else:
-        bool_values = np.zeros((entry_count, num_look_ahead_days)) != 0
+        failure_values_bool = np.zeros((entry_count, num_look_ahead_days)) != 0
 
+    copy.drop(columns=['failure'], inplace=True)
     col_names = [f"fails_within_{i}_days" for i in range(1, num_look_ahead_days + 1)]
-    failure_features = pd.DataFrame(data=bool_values, columns=col_names)
+    failure_features = pd.DataFrame(data=failure_values_bool, columns=col_names)
+    failure_features.index = copy.index
 
-    return pd.concat([df, failure_features], axis=1)
+    return pd.concat([copy, failure_features], axis=1)
 
 def normalization_and_additional_failure_columns():
-    features = pd.read_csv('../../data/features_test.csv', parse_dates=['date'])
-    print('CSV read finished')
+    print('Reading csv for normalization')
+    start = time.time()
+    features = pd.read_csv(features_path, parse_dates=['date'])
+    end = time.time()
+    time_measuring_data['time_read_parsed_file'] = end - start
+    print('CSV read for normalization finished')
 
+    start = time.time()
     smart_col_names = ['smart_197_raw', 'smart_9_raw', 'smart_241_raw', 'smart_187_raw']
     smart_means = features[smart_col_names].mean(axis=0)
     smart_stddevs = features[smart_col_names].std(axis=0)
@@ -58,17 +70,28 @@ def normalization_and_additional_failure_columns():
     features[smart_col_names] = (features[smart_col_names] - smart_means) / smart_stddevs
 
     print('Normalization finished')
+    end = time.time()
+    time_measuring_data['time_normalization'] = end - start
 
     #add failure columns
+    start = time.time()
     num_look_ahead_days = 5
+    num_serial_numbers = features.serial_number.nunique()
     grouped_by_serial_number = features.groupby('serial_number')
 
-    features_with_failure_columns = grouped_by_serial_number.apply(
-        lambda df: add_failure_columns_to_df_with_one_serial_number(df, num_look_ahead_days))
+    with tqdm(total=num_serial_numbers, desc='Adding lookahead failure columns') as progress_bar:
+        for serial_number, group in grouped_by_serial_number:
+            group_with_failure_cols = add_lookahead_failure_cols_to_group(group, num_look_ahead_days)
+            header = not os.path.isfile(normalized_path)
+            group_with_failure_cols.to_csv(normalized_path, mode='a', index=None, header=header)
+            progress_bar.update()
 
-    features_with_failure_columns.to_csv(normalized_path, index=None)
-    print('Final features file written')
+    end = time.time()
+    time_measuring_data['time_add_lookahead_failure_cols'] = end - start
+
 
 if __name__ == "__main__":
-    #filter_columns_and_write_back()
+    filter_columns_and_write_back()
     normalization_and_additional_failure_columns()
+
+    print(time_measuring_data)
