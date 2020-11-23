@@ -1,3 +1,5 @@
+import sys
+
 from tqdm import tqdm
 import pandas as pd
 import os
@@ -5,10 +7,10 @@ import numpy as np
 import time
 import json
 
-raw_data_path = "../../data/raw"
-features_path = "../../data/features.csv"
-labels_path = "../../data/labels.csv"
-normalized_path = "../../data/normalized.csv"
+raw_data_path = "data/raw"
+features_path = "data/features.csv"
+labels_path = "data/labels.csv"
+normalized_path = "data/normalized.csv"
 
 feature_cols = {'date': str, 'serial_number': str,
                 'smart_197_raw': 'float', 'smart_9_raw': 'float', 'smart_241_raw': 'float', 'smart_187_raw': 'float',
@@ -31,29 +33,18 @@ def filter_columns_and_write_back():
     end = time.time()
     time_measuring_data['time_parse_raw_files'] = end - start
 
-def add_lookahead_failure_cols_to_group(group, num_look_ahead_days):
-    copy = group.copy()
-    entry_count = len(copy)
-
-    if copy.failure.any():
-        copy.sort_values('date', inplace=True)
-        ones = np.ones((entry_count, num_look_ahead_days))
-        failure_values_float = np.fliplr(np.tril(ones, num_look_ahead_days - entry_count))
-        failure_values_bool = failure_values_float != 0
+def add_days_to_failure_column_to_group(group):
+    if group.failure.any():
+        group['days_to_failure'] = (group.date.max() - group.date).dt.days
     else:
-        failure_values_bool = np.zeros((entry_count, num_look_ahead_days)) != 0
+        group['days_to_failure'] = -1
+    return group
 
-    copy.drop(columns=['failure'], inplace=True)
-    col_names = [f"fails_within_{i}_days" for i in range(1, num_look_ahead_days + 1)]
-    failure_features = pd.DataFrame(data=failure_values_bool, columns=col_names)
-    failure_features.index = copy.index
-
-    return pd.concat([copy, failure_features], axis=1)
-
-def normalization_and_additional_failure_columns():
+def normalize_and_add_days_to_failure_column():
     print('Reading csv for normalization')
     start = time.time()
     features = pd.read_csv(features_path, parse_dates=['date'])
+    print(sys.getsizeof(features))
     end = time.time()
     time_measuring_data['time_read_parsed_file'] = end - start
     print('CSV read for normalization finished')
@@ -73,25 +64,20 @@ def normalization_and_additional_failure_columns():
     end = time.time()
     time_measuring_data['time_normalization'] = end - start
 
-    #add failure columns
+    #add day-to-failure columns
     start = time.time()
-    num_look_ahead_days = 5
-    num_serial_numbers = features.serial_number.nunique()
-    grouped_by_serial_number = features.groupby('serial_number')
-
-    with tqdm(total=num_serial_numbers, desc='Adding lookahead failure columns') as progress_bar:
-        for serial_number, group in grouped_by_serial_number:
-            group_with_failure_cols = add_lookahead_failure_cols_to_group(group, num_look_ahead_days)
-            header = not os.path.isfile(normalized_path)
-            group_with_failure_cols.to_csv(normalized_path, mode='a', index=None, header=header)
-            progress_bar.update()
-
+    print('Adding days_to_failure column')
+    tqdm.pandas()
+    features = features.groupby('serial_number').progress_apply(add_days_to_failure_column_to_group)
     end = time.time()
-    time_measuring_data['time_add_lookahead_failure_cols'] = end - start
+    time_measuring_data['time_add_day_to_failure_col'] = end - start
+
+    print('Final csv write')
+    features.to_csv(normalized_path, index=None)
 
 
 if __name__ == "__main__":
-    filter_columns_and_write_back()
-    normalization_and_additional_failure_columns()
+    #filter_columns_and_write_back()
+    normalize_and_add_days_to_failure_column()
 
     print(time_measuring_data)
