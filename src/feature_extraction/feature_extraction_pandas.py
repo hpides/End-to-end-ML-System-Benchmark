@@ -77,7 +77,7 @@ def normalize_and_add_days_to_failure_column():
 
 
 if __name__ == "__main__":
-    #filter_columns_and_write_back()
+    filter_columns_and_write_back()
     normalize_and_add_days_to_failure_column()
 
     print(time_measuring_data)
