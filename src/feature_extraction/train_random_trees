@@ -1,5 +1,6 @@
 from sklearn.ensemble import RandomForestRegressor
 from sklearn.model_selection import train_test_split
+from math import floor
 import numpy as np
 import os
 import pandas as pd
@@ -15,7 +16,9 @@ def train_and_test():
     df = pd.read_csv(traindata_path)
     df_failures = df[df.days_to_failure != -1]
     df_working = df[df.days_to_failure == -1]
-    df_working = df_working.sample(n=df_failures.shape[0])
+    df_working = df_working.sample(n=floor((df_failures.shape[0])/5))
+    df_failures['bin'] = pd.qcut(df_failures['days_to_failure'], q=5, labels=False)
+    print(df_failures)
     df = pd.concat([df_working, df_failures])
     dataset = df.values
 
@@ -24,7 +27,7 @@ def train_and_test():
     X = np.asarray(X).astype('float32')
 
     # Create the label dataset
-    Y = dataset[:,6]
+    Y = dataset[:,9]
     Y = np.asarray(Y).astype('float32')
 
     # Split into training, validation and test dataset
