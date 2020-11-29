@@ -1,5 +1,4 @@
 import re
-import sys
 
 import h5py
 from tqdm import tqdm
