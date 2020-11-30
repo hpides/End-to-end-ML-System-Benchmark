@@ -37,7 +37,7 @@ def parse_raw_csv_files():
             hash_col = df.serial_number.apply(hash) % hash_bucket_count
             groupby = df.groupby(hash_col)
             for group_id, group_df in groupby:
-                pandas_hdf.append(f"/group{group_id}", group_df)
+                pandas_hdf.append(f"/group{group_id}", group_df, min_itemsize={'serial_number': 21})
 
 def add_days_to_failure_col_to_group(group):
     group_copy = group.copy()
