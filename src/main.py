@@ -1,7 +1,8 @@
-from decorators import measure_time
+from decorators import MeasureTime
+from config import parser as config
 
 
-@measure_time
+@MeasureTime(config['filepaths']['out_file'])
 def print_this(string, times):
     for i in range(times):
         print(string)
