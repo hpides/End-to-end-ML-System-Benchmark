@@ -38,6 +38,8 @@ class MeasureTime(Measure):
 class MeasureMemorySamples(Measure):
     name = "Memory measurement by sampling"
 
+    ## Erwartet als Rückgabewert ein Dictionary
+
     def __init__(self, output_file, interval):
         super().__init__(output_file)
         self.interval = interval
@@ -62,3 +64,49 @@ class MeasureMemorySamples(Measure):
         while self.keep_measuring:
             self.log(f"{round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)} MB")
             time.sleep(self.interval)
+
+class MeasureLearning(Measure):
+    name = "Learning measurement"
+
+    ## Erwartet ein Dict mit den Metriken als return type
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+
+            if type(result) is not dict:
+                self.log("Illegal result datatype. Must be a dict.")
+                return None
+
+            if "TP" in result and "TN" in result and "FP" in result and "FN" in result and "0_class" not in result and "1_class" not in result:
+                result["0_class"] = result["TN"] + result["FP"]
+                result["1_class"] = result["TP"] + result["FN"]
+
+            if "TP" in result and ("FN" in result or "1_class" in result) and "recall" not in result:
+                if "FN" in result:
+                    result["recall"] = result["TP"] / (result["TP"] + result["FN"])
+                else:
+                    result["recall"] = result["TP"] / result["1_class"]
+
+            if "TP" in result and "FP" in result and "precision" not in result:
+                result["precision"] = result["TP"] / (result["TP"] + result["FP"])
+
+            if "1_class" in result and "0_class" in result and "recall" in result and "precision" in result:
+                if "TP" not in result:
+                    result["TP"] = result["recall"] * result["1_class"]
+                if "FN" not in result:
+                    result["FN"] = result["1_class"] - result["TP"]
+                if "FP" not in result:
+                    result["FP"] = (result["precision"] / result["TP"]) **-1 - result["TP"]
+                if "TN" not in result:
+                    result["TN"] = result["0_class"] - result["FP"]
+
+            if "TP" in result and "TN" in result and "0_class" in result and "1_class" in result and "accuracy" not in result:
+                result["accuracy"] = (result["TP"] + result["TN"]) / (result["0_class"] + result["1_class"])
+
+            if "TP" in result and "FP" in result and "FN" in result and "f1_score" not in result:
+                result["f1_score"] = (result["TP"]*2) / (result["TP"]*2 + result["FP"] + result["FN"])
+
+            self.log(result)
+            return result
+        return inner
