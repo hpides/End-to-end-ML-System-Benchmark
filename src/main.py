@@ -1,4 +1,4 @@
-from decorators import MeasureTime, MeasureMemorySamples
+from decorators import MeasureTime, MeasureMemorySamples, MeasureLatency, MeasureThroughput
 from config import parser as config
 import numpy as np
 import sys
@@ -12,6 +12,8 @@ def print_this(string, times):
 
 @MeasureMemorySamples(config['filepaths']['out_file'], 0.1)
 @MeasureTime(config['filepaths']['out_file'])
+@MeasureLatency(config['filepaths']['out_file'], 40000000)
+@MeasureThroughput(config['filepaths']['out_file'], 40000000)
 def bloat(minsize, maxsize, step):
     a = None
     for i in range(minsize, maxsize, step):
