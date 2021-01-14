@@ -2,25 +2,34 @@ import time
 import resource
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+from datamodel import Measurement
 
 
 class Measure(object):
     name = None
 
-    def __init__(self, output_file):
-        self.output_file = output_file
+    def __init__(self, session, benchmark_uuid):
+        self.session = session
         self.func_name = None
+        self.benchmark_uuid = benchmark_uuid
 
     def log(self, value):
-        with open(self.output_file, 'a+') as out_file:
-            out_file.write(f"{str(datetime.now())} --- {self.func_name} --- {self.name}: {value}\n")
+        # with open(self.output_file, 'a+') as out_file:
+        #     out_file.write(f"{str(datetime.now())} --- {self.func_name} --- {self.name}: {value}\n")
+        measurement = Measurement(datetime=datetime.now(),
+                                  benchmark_uuid=self.benchmark_uuid,
+                                  function_name=self.func_name,
+                                  type=self.name,
+                                  value=value)
+        self.session.add(measurement)
+        self.session.commit()
 
     def __call__(self, func):
         self.func_name = func.__name__
 
 
 class MeasureTime(Measure):
-    name = "Time measurement"
+    name = "Time"
 
     def __call__(self, func):
         super().__call__(func)
@@ -36,12 +45,10 @@ class MeasureTime(Measure):
 
 
 class MeasureMemorySamples(Measure):
-    name = "Memory measurement by sampling"
+    name = "Memory"
 
-    ## Erwartet als Rückgabewert ein Dictionary
-
-    def __init__(self, output_file, interval):
-        super().__init__(output_file)
+    def __init__(self, session, benchmark_uuid, interval):
+        super().__init__(session, benchmark_uuid)
         self.interval = interval
         self.keep_measuring = True
 
@@ -64,6 +71,7 @@ class MeasureMemorySamples(Measure):
         while self.keep_measuring:
             self.log(f"{round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)} MB")
             time.sleep(self.interval)
+
 
 class MeasureLearning(Measure):
     name = "Learning measurement"
