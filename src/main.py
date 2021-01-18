@@ -1,19 +1,27 @@
 from decorators import MeasureTime, MeasureMemorySamples, MeasureLatency, MeasureThroughput
 from config import parser as config
 import numpy as np
-import sys
+from sqlalchemy import create_engine
+from sqlalchemy.orm import sessionmaker
+from datamodel import Base, Measurement
+from uuid import uuid4
 
+engine = create_engine('sqlite+pysqlite:///' + config['filepaths']['out_file'])
+Base.metadata.create_all(engine)
 
-@MeasureTime(config['filepaths']['out_file'])
-def print_this(string, times):
-    for i in range(times):
-        print(string)
+Session = sessionmaker(bind=engine)
+session = Session()
 
+benchmark_uuid = str(uuid4())
 
-@MeasureMemorySamples(config['filepaths']['out_file'], 0.1)
-@MeasureTime(config['filepaths']['out_file'])
-@MeasureLatency(config['filepaths']['out_file'], 40000000)
-@MeasureThroughput(config['filepaths']['out_file'], 40000000)
+# @MeasureTime(session)
+# def print_this(string, times):
+#     for i in range(times):
+#         print(string)
+#
+
+@MeasureMemorySamples(session=session, benchmark_uuid=benchmark_uuid, interval=0.1)
+@MeasureTime(session=session, benchmark_uuid=benchmark_uuid)
 def bloat(minsize, maxsize, step):
     a = None
     for i in range(minsize, maxsize, step):
@@ -22,7 +30,13 @@ def bloat(minsize, maxsize, step):
 
 
 def main():
-    print(bloat(0, 20000, 1000))
+    try:
+        print(bloat(0, 2000, 100))
+        query = session.query(Measurement)
+        for row in query.all():
+            print(row.__dict__)
+    finally:
+        session.close()
 
 
 if __name__ == "__main__":
