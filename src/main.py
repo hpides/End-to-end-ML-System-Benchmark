@@ -1,4 +1,4 @@
-from decorators import MeasureTime, MeasureMemorySamples
+from decorators import MeasureTime, MeasureMemorySamples, MeasureLatency, MeasureThroughput
 from config import parser as config
 import numpy as np
 from sqlalchemy import create_engine
@@ -14,13 +14,12 @@ session = Session()
 
 benchmark_uuid = str(uuid4())
 
-
 # @MeasureTime(session)
 # def print_this(string, times):
 #     for i in range(times):
 #         print(string)
 #
-#
+
 @MeasureMemorySamples(session=session, benchmark_uuid=benchmark_uuid, interval=0.1)
 @MeasureTime(session=session, benchmark_uuid=benchmark_uuid)
 def bloat(minsize, maxsize, step):

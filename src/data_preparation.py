@@ -50,6 +50,7 @@ def add_days_to_failure_col_to_group(group):
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)
+    print(entry_count)
 
     X_h5 = h5py_hdf.create_dataset('/X', shape=(entry_count, smart_col_count), dtype='float')
     y_h5 = h5py_hdf.create_dataset('/y', shape=(entry_count), dtype='int')
