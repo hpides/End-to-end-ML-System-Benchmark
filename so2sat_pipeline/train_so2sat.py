@@ -17,11 +17,11 @@ def train():
     n = 32768           ## 2**15
 
     # Load data
-    f = h5py.File('/media/jonas/DATA/So2Sat/m1483140/training.h5', 'r')
+    f = h5py.File('/data/training.h5', 'r')
     input_train = f['sen1'][0:n]
     label_train = f['label'][0:n]
     f.close()
-    f = h5py.File('/media/jonas/DATA/So2Sat/m1483140/validation.h5', 'r')
+    f = h5py.File('/data/validation.h5', 'r')
     input_val = f['sen1'][0:n]
     label_val = f['label'][0:n]
     f.close()
