@@ -25,6 +25,7 @@ smart_col_count = len(smart_col_names)
 pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
+
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:
