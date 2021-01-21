@@ -111,18 +111,13 @@ class MeasureConfusion(Measure):
 class MeasureLatency(Measure):
     measurement_type = "Latency"
 
-    def __init__(self, benchmark, number_of_entries):
-        super().__init__(benchmark)
-        self.number_of_entries = number_of_entries
-
     def __call__(self, func):
         def inner(*args, **kwargs):
-            result = func(*args, **kwargs)
             before = time.perf_counter()
+            result = func(*args, **kwargs)
             after = time.perf_counter()
             time_taken = after - before
-            # number_of_entries = 40000000
-            latency = time_taken / self.number_of_entries
+            latency = result['num_entries'] / time_taken
             self.benchmark.log(func.__name__, self.measurement_type, latency)
             return result
 
@@ -132,19 +127,14 @@ class MeasureLatency(Measure):
 class MeasureThroughput(Measure):
     measurement_type = "Throughput"
 
-    def __init__(self, benchmark, number_of_entries):
-        super().__init__(benchmark)
-        self.number_of_entries = number_of_entries
-
     def __call__(self, func):
         def inner(*args, **kwargs):
-            result = func(*args, **kwargs)
             before = time.perf_counter()
+            result = func(*args, **kwargs)
             after = time.perf_counter()
             time_taken = after - before
-            # number_of_entries = 40000000
-            throughput = self.number_of_entries / time_taken
-            self.benchmark.log(func.__name__, self.measurement_type, throughput)
+            latency =  time_taken / result['num_entries']
+            self.benchmark.log(func.__name__, self.measurement_type, latency)
             return result
 
         return inner

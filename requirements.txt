@@ -1,3 +1,8 @@
-configparser
 numpy
 SQLAlchemy
+pandas
+sklearn
+imblearn
+h5py
+tqdm
+matplotlib
