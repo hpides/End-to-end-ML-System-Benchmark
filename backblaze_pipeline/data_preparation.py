@@ -30,7 +30,6 @@ smart_col_count = len(smart_col_names)
 pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
-
 @pkg.MeasureTime(bm, description="parsing of raw csv files into hashed hdf5")
 @pkg.MeasureThroughput(bm, description="parsing of raw csv files into hashed hdf5")
 def parse_raw_csv_files():
