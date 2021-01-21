@@ -3,3 +3,5 @@ data/*
 .ipynb_checkpoints/*
 */__pycache__
 env
+.vscode
+backblaze_benchmark.db

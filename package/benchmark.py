@@ -21,12 +21,12 @@ class Benchmark:
         self.close()
         
 
-    def log(self, func_name, measure_type, value):
+    def log(self, description, measure_type, value):
         # with open(self.output_file, 'a+') as out_file:
         #     out_file.write(f"{str(datetime.now())} --- {self.func_name} --- {self.name}: {value}\n")
         measurement = Measurement(datetime=datetime.now(),
                                   benchmark_uuid=self.uuid,
-                                  function_name=func_name,
+                                  description=description,
                                   measurement_type=measure_type,
                                   value=value)
         self.session.add(measurement)
