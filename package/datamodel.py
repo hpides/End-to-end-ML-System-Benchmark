@@ -9,7 +9,7 @@ class Measurement(Base):
     id = Column(Integer, primary_key=True)
     benchmark_uuid = Column(String)
     datetime = Column(DateTime)
-    function_name = Column(String)
+    description = Column(String)
     measurement_type = Column(String)
     value = Column(String)
 

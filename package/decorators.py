@@ -1,29 +1,26 @@
 import time
 import resource
 from concurrent.futures import ThreadPoolExecutor
+import json
 
 class Measure(object):
     name = None
 
-    def __init__(self, benchmark):
+    def __init__(self, benchmark, description):
         self.benchmark = benchmark
-
-    def __call__(self, func):
-        self.func_name = func.__name__
+        self.description = description
 
 
 class MeasureTime(Measure):
     measurement_type = "Time"
 
     def __call__(self, func):
-        super().__call__(func)
-
         def inner(*args, **kwargs):
             before = time.perf_counter()
             result = func(*args, **kwargs)
             after = time.perf_counter()
             time_taken = after - before
-            self.benchmark.log(func.__name__, self.measurement_type, time_taken)
+            self.benchmark.log(self.description, self.measurement_type, time_taken)
             return result
 
         return inner
@@ -32,17 +29,13 @@ class MeasureTime(Measure):
 class MeasureMemorySamples(Measure):
     measurement_type = "Memory"
 
-    def __init__(self, benchmark, interval):
-        super().__init__(benchmark)
+    def __init__(self, benchmark, description, interval=0.1):
+        super().__init__(benchmark, description)
         self.interval = interval
         self.keep_measuring = True
 
     def __call__(self, func):
-        super().__call__(func)
-        self.func_name = func.__name__
-
         def inner(*args, **kwargs):
-            inner.__name__ = self.func_name
             with ThreadPoolExecutor() as tpe:
                 tpe.submit(self.measure_memory)
                 try:
@@ -57,7 +50,7 @@ class MeasureMemorySamples(Measure):
     def measure_memory(self):
         while self.keep_measuring:
             measurement_value = f"{round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)} MB"
-            self.benchmark.log(self.func_name, self.measurement_type, measurement_value)
+            self.benchmark.log(self.description, self.measurement_type, measurement_value)
             time.sleep(self.interval)
 
 
@@ -102,11 +95,23 @@ class MeasureConfusion(Measure):
             if "TP" in result and "FP" in result and "FN" in result and "f1_score" not in result:
                 result["f1_score"] = (result["TP"] * 2) / (result["TP"] * 2 + result["FP"] + result["FN"])
 
-            self.benchmark.log(func.__name__, self.measurement_type, str(result))
+            self.benchmark.log(self.description, self.measurement_type, str(result))
             return result
 
         return inner
 
+class MeasureMulticlassConfusion(Measure):
+    measurement_type = "Multiclass Confusion Matrix"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            result["confusion matrix"] = str(result["confusion matrix"])
+            result["classes"] = str(result["classes"])
+            self.benchmark.log(self.description, self.measurement_type, json.dumps(result))
+            return result
+
+        return inner
 
 class MeasureLatency(Measure):
     measurement_type = "Latency"
@@ -118,7 +123,7 @@ class MeasureLatency(Measure):
             after = time.perf_counter()
             time_taken = after - before
             latency = result['num_entries'] / time_taken
-            self.benchmark.log(func.__name__, self.measurement_type, latency)
+            self.benchmark.log(self.description, self.measurement_type, latency)
             return result
 
         return inner
@@ -134,7 +139,7 @@ class MeasureThroughput(Measure):
             after = time.perf_counter()
             time_taken = after - before
             latency =  time_taken / result['num_entries']
-            self.benchmark.log(func.__name__, self.measurement_type, latency)
+            self.benchmark.log(self.description, self.measurement_type, latency)
             return result
 
         return inner
