@@ -7,7 +7,7 @@ def test(model):
     n = 32768  ## 2**15
     img_width, img_height, img_num_channels = 32, 32, 8
 
-    f = h5py.File('/media/jonas/DATA/So2Sat/m1483140/testing.h5', 'r')
+    f = h5py.File('data/testing.h5', 'r')
     input_test = f['sen1'][0:n]
     label_test = f['label'][0:n]
     f.close()
