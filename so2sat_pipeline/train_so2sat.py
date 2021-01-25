@@ -2,7 +2,15 @@ import h5py
 from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras.optimizers import Adam
+import os
+import sys
 
+sys.path.insert(0, os.getcwd())
+import package as pkg
+from benchmarking import bm
+
+@pkg.MeasureTime(bm, description="Training time")
+@pkg.MeasureThroughput(bm, description="Training throughput")
 def train():
 
     # Model configuration
@@ -17,11 +25,11 @@ def train():
     n = 32768           ## 2**15
 
     # Load data
-    f = h5py.File('/data/training.h5', 'r')
+    f = h5py.File('data/training.h5', 'r')
     input_train = f['sen1'][0:n]
     label_train = f['label'][0:n]
     f.close()
-    f = h5py.File('/data/validation.h5', 'r')
+    f = h5py.File('data/validation.h5', 'r')
     input_val = f['sen1'][0:n]
     label_val = f['label'][0:n]
     f.close()
@@ -56,4 +64,4 @@ def train():
                 verbose=verbosity,
                 validation_data=(input_val, label_val))
 
-    return model
+    return {"model": model, "num_entries": len(input_train), "classifier": optimizer}
