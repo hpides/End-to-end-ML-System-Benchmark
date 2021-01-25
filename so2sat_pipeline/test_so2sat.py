@@ -1,7 +1,15 @@
 import h5py
 from sklearn.metrics import confusion_matrix
 import numpy as np
+import os
+import sys
 
+sys.path.insert(0, os.getcwd())
+import package as pkg
+from benchmarking import bm
+
+@pkg.MeasureTime(bm, description="Testing time")
+@pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
 def test(model):
 
     n = 32768  ## 2**15
@@ -26,3 +34,12 @@ def test(model):
 
     print("Confusion Matrix: \n")
     print(con_mat)
+
+    classes = ["compact high-rise", "compact mid-rise", "compact low-rise",
+               "open high-rise", "open mid-rise", "open low-rise",
+               "lightweight low-rise", "large low-rise", "sparsely built",
+               "heavy industry", "dense trees", "scattered tree",
+               "brush, scrub", "low plants", "bare rock or paved",
+               "bare soil or sand", "water"]
+
+    return {"confusion matrix": con_mat, "classes": classes}
