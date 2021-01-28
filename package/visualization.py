@@ -1,6 +1,7 @@
 from datamodel import Measurement, BenchmarkMetadata
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, desc, asc
+
 import pandas as pd
 
 import matplotlib.pyplot as plt
@@ -45,6 +46,9 @@ def plot_measurement_type(df, measurement_type):
         ax.plot(description_df.datetime.values,
                 description_df.value.values,
                 label=description)
+
+    ax.set_ylabel("MB of Memory")
+    ax.set_xlabel("Time")
     plt.legend(loc=2)
 
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
