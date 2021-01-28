@@ -30,8 +30,10 @@ smart_col_count = len(smart_col_names)
 pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
+
 @pkg.MeasureTime(bm, description="parsing of raw csv files into hashed hdf5")
 @pkg.MeasureThroughput(bm, description="parsing of raw csv files into hashed hdf5")
+@pkg.MeasureMemorySamples(bm, description="parsing of raw csv files into hashed hdf5")
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:
@@ -49,6 +51,7 @@ def parse_raw_csv_files():
                 pandas_hdf.append(f"/group{group_id}", group_df, min_itemsize={'serial_number': 21})
     return {'num_entries': num_files}
 
+
 def add_days_to_failure_col_to_group(group):
     group_copy = group.copy()
     if group_copy.failure.any():
@@ -57,8 +60,9 @@ def add_days_to_failure_col_to_group(group):
         group_copy['days_to_failure'] = -1
     return group_copy
 
-@pkg.MeasureMemorySamples(bm, interval=1, description="converting pandas to h5py")
+
 @pkg.MeasureTime(bm, description="converting pandas to h5py")
+@pkg.MeasureMemorySamples(bm, interval=1, description="converting pandas to h5py")
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)
@@ -80,7 +84,9 @@ def transfer_from_pandas_to_h5py():
             process_bar.set_description(
                 f"Transferring dataset {process_bar.n}/{process_bar.total} to h5py : {dataset_name}")
 
+
 @pkg.MeasureThroughput(bm, description="normalization and categorization")
+@pkg.MeasureMemorySamples(bm, description="normalization and categorization")
 def normalization_and_categorization():
     X_h5 = h5py_hdf['X']
     y_h5 = h5py_hdf['y']
@@ -111,6 +117,7 @@ def normalization_and_categorization():
 
     return {'num_entries': len(X)}
 
+
 @pkg.MeasureMemorySamples(bm, description="split and resample dataset", interval=0.2)
 def dataset_splitting_and_resampling():
     X = h5py_hdf['X'][:,:]
@@ -138,6 +145,7 @@ def dataset_splitting_and_resampling():
     h5py_hdf.create_dataset('X_train', data=X_train)
     h5py_hdf.create_dataset('y_train', data=y_train)
 
+
 def prepare_data():
     parse_raw_csv_files()
     transfer_from_pandas_to_h5py()
@@ -145,6 +153,7 @@ def prepare_data():
     dataset_splitting_and_resampling()
     pandas_hdf.close()
     h5py_hdf.close()
+
 
 if __name__ == "__main__":
     prepare_data()

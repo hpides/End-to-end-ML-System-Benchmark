@@ -11,8 +11,10 @@ sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
 
+
 @pkg.MeasureThroughput(bm, description="Training throughput")
 @pkg.MeasureTime(bm, description="Training time")
+@pkg.MeasureMemorySamples(bm, description="Training memory")
 def train():
     with h5py.File('data/h5py.h5', 'r') as hdf:
         X_train = hdf['X_train'][:,:]
@@ -21,7 +23,9 @@ def train():
         classifier.fit(X_train, y_train)
         return {'num_entries': len(X_train), 'classifier': classifier}
 
+
 @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
+@pkg.MeasureMemorySamples(bm, description="Testing/Validation results")
 def test(training_result):
     with h5py.File('data/h5py.h5', 'r') as hdf:
         classifier = training_result['classifier']
@@ -30,7 +34,7 @@ def test(training_result):
         y_pred = classifier.predict(X_test)
         conf_mat = confusion_matrix(y_test, y_pred)
         classes = classifier.classes_
-        ConfusionMatrixDisplay(conf_mat, classes).plot()
+        # ConfusionMatrixDisplay(conf_mat, classes).plot()
         return {"confusion matrix": conf_mat, "classes": classes}
 
 def train_and_test():

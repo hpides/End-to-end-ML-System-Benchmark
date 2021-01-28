@@ -1,6 +1,7 @@
 import time
 import resource
 from concurrent.futures import ThreadPoolExecutor
+import threading
 import json
 
 class Measure(object):
@@ -20,7 +21,7 @@ class MeasureTime(Measure):
             result = func(*args, **kwargs)
             after = time.perf_counter()
             time_taken = after - before
-            self.benchmark.log(self.description, self.measurement_type, time_taken)
+            self.benchmark.log(self.description, self.measurement_type, time_taken, "seconds")
             return result
 
         return inner
@@ -37,21 +38,21 @@ class MeasureMemorySamples(Measure):
     def __call__(self, func):
         def inner(*args, **kwargs):
             with ThreadPoolExecutor() as tpe:
-                tpe.submit(self.measure_memory)
                 try:
                     func_thread = tpe.submit(func, *args, **kwargs)
+                    while not func_thread.done() and self.keep_measuring:
+                        self.log_memory()
                     result = func_thread.result()
                 finally:
                     self.keep_measuring = False
                 return result
-
         return inner
 
-    def measure_memory(self):
-        while self.keep_measuring:
-            measurement_value = f"{round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)} MB"
-            self.benchmark.log(self.description, self.measurement_type, measurement_value)
-            time.sleep(self.interval)
+    def log_memory(self):
+        measurement_value = f"{round(resource.getrusage(resource.RUSAGE_SELF).ru_maxrss / 1024)}"
+        self.benchmark.log(self.description, self.measurement_type, measurement_value, "MB")
+        time.sleep(self.interval)
+        return measurement_value
 
 
 class MeasureConfusion(Measure):
@@ -100,6 +101,7 @@ class MeasureConfusion(Measure):
 
         return inner
 
+
 class MeasureMulticlassConfusion(Measure):
     measurement_type = "Multiclass Confusion Matrix"
 
@@ -113,6 +115,7 @@ class MeasureMulticlassConfusion(Measure):
 
         return inner
 
+
 class MeasureLatency(Measure):
     measurement_type = "Latency"
 
@@ -123,7 +126,7 @@ class MeasureLatency(Measure):
             after = time.perf_counter()
             time_taken = after - before
             latency = result['num_entries'] / time_taken
-            self.benchmark.log(self.description, self.measurement_type, latency)
+            self.benchmark.log(self.description, self.measurement_type, latency, "entries per second")
             return result
 
         return inner
@@ -138,8 +141,8 @@ class MeasureThroughput(Measure):
             result = func(*args, **kwargs)
             after = time.perf_counter()
             time_taken = after - before
-            latency =  time_taken / result['num_entries']
-            self.benchmark.log(self.description, self.measurement_type, latency)
+            latency = time_taken / result['num_entries']
+            self.benchmark.log(self.description, self.measurement_type, latency, "seconds per entry")
             return result
 
         return inner
