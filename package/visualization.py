@@ -3,18 +3,22 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, desc, asc
 
 import pandas as pd
+import seaborn as sn
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from sklearn.metrics import plot_confusion_matrix
 
 
 def visualize(uuid):
-    engine = create_engine('sqlite+pysqlite:///backblaze_benchmark.db')
+    ## engine = create_engine('sqlite+pysqlite:///backblaze_benchmark.db')
+    engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
         df_dict = make_dataframe_from_database(uuid, session)
         plot_measurement_type(df_dict, "Memory")
+        plot_confusion_matrix(df_dict)
 
         session.commit()
     except:
@@ -54,6 +58,26 @@ def plot_measurement_type(df, measurement_type):
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
     plt.show()
 
+def plot_confusion_matrix(df):
+
+    values = df.loc[df.measurement_type == "Multiclass Confusion Matrix"].value.values
+    classes = df.loc[df.measurement_type == "Multiclass Confusion Matrix Class"].value.values
+
+    con_mat = []
+
+    for i in range(len(classes)):
+        con_mat_row = []
+        for j in range(len(classes)):
+            con_mat_row.append(int(values[j+i*len(classes)]))
+        con_mat.append(con_mat_row)
+
+    matrix = pd.DataFrame(con_mat, index=classes, columns=classes)
+    plt.figure(figsize=(12, 8))
+    plt.title("Confusion Matrix")
+    sn.heatmap(matrix, annot=True)
+    plt.show()
+
 
 if __name__ == "__main__":
-    visualize('8a989821-f2e9-48da-ab41-36cb0fc6f580')
+    ## visualize('8a989821-f2e9-48da-ab41-36cb0fc6f580')
+    visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc")
