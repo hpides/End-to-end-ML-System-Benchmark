@@ -108,9 +108,13 @@ class MeasureMulticlassConfusion(Measure):
     def __call__(self, func):
         def inner(*args, **kwargs):
             result = func(*args, **kwargs)
+            for i in range(len(result["confusion matrix"])):
+                self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
+                for j in range((len(result["confusion matrix"]))):
+                    self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j]))
+
             result["confusion matrix"] = str(result["confusion matrix"])
             result["classes"] = str(result["classes"])
-            self.benchmark.log(self.description, self.measurement_type, json.dumps(result))
             return result
 
         return inner
