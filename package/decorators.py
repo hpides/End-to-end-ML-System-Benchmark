@@ -1,5 +1,6 @@
 import time
 import resource
+import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
 import threading
 import json
@@ -53,6 +54,37 @@ class MeasureMemorySamples(Measure):
         self.benchmark.log(self.description, self.measurement_type, measurement_value, "MB")
         time.sleep(self.interval)
         return measurement_value
+
+
+class MeasureMemoryTracemalloc(Measure):
+    measurement_type = "Memory (tracemalloc)"
+
+    def __init__(self, benchmark, description, interval=0.1):
+        super().__init__(benchmark, description)
+        self.interval = interval
+        self.keep_measuring = True
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            with ThreadPoolExecutor() as tpe:
+                try:
+                    if not tracemalloc.is_tracing():
+                        tracemalloc.start()
+                    func_thread = tpe.submit(func, *args, **kwargs)
+                    while not func_thread.done() and self.keep_measuring:
+                        self.log_memory()
+                    result = func_thread.result()
+                finally:
+                    self.keep_measuring = False
+                    if tracemalloc.is_tracing():
+                        tracemalloc.stop()
+                return result
+        return inner
+
+    def log_memory(self):
+        measurement_value = tracemalloc.get_traced_memory()[0] / (2**20)
+        self.benchmark.log(self.description, self.measurement_type, measurement_value, "MiB")
+        # time.sleep(self.interval)
 
 
 class MeasureConfusion(Measure):

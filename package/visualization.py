@@ -1,9 +1,9 @@
-from datamodel import Measurement, BenchmarkMetadata
+from .datamodel import Measurement, BenchmarkMetadata
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, desc, asc
 
 import pandas as pd
-import seaborn as sn
+# import seaborn as sn
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -11,8 +11,8 @@ from sklearn.metrics import plot_confusion_matrix
 
 
 def visualize(uuid):
-    ## engine = create_engine('sqlite+pysqlite:///backblaze_benchmark.db')
-    engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
+    engine = create_engine('sqlite+pysqlite:///backblaze_benchmark.db')
+    # engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
@@ -53,6 +53,7 @@ def plot_measurement_type(df, measurement_type):
 
     ax.set_ylabel("MB of Memory")
     ax.set_xlabel("Time")
+    ax.set_ylim(bottom=0)
     plt.legend(loc=2)
 
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
@@ -79,5 +80,5 @@ def plot_confusion_matrix(df):
 
 
 if __name__ == "__main__":
-    ## visualize('8a989821-f2e9-48da-ab41-36cb0fc6f580')
-    visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc")
+    visualize('8a989821-f2e9-48da-ab41-36cb0fc6f580')
+    # visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc")
