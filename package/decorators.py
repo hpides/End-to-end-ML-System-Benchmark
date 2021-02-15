@@ -2,8 +2,8 @@ import time
 import resource
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
-import threading
-import json
+import psutil
+import os
 
 class Measure(object):
     name = None
@@ -83,6 +83,41 @@ class MeasureMemoryTracemalloc(Measure):
 
     def log_memory(self):
         measurement_value = tracemalloc.get_traced_memory()[0] / (2**20)
+        self.benchmark.log(self.description, self.measurement_type, measurement_value, "MiB")
+        time.sleep(self.interval)
+
+
+class MeasureMemoryPsutil(Measure):
+    measurement_type = "Memory (psutil)"
+
+    def __init__(self, benchmark, description, interval=0.1):
+        super().__init__(benchmark, description)
+        self.interval = interval
+        self.keep_measuring = True
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            self.pid = os.getpid()
+            self.process = psutil.Process(self.pid)
+            with ThreadPoolExecutor() as tpe:
+                try:
+                    if not tracemalloc.is_tracing():
+                        tracemalloc.start()
+                    func_thread = tpe.submit(func, *args, **kwargs)
+                    while not func_thread.done() and self.keep_measuring:
+                        self.log_memory()
+                    result = func_thread.result()
+                finally:
+                    self.keep_measuring = False
+                    if tracemalloc.is_tracing():
+                        tracemalloc.stop()
+                return result
+        return inner
+
+    def log_memory(self):
+        # measurement_value = tracemalloc.get_traced_memory()[0] / (2**20)
+        measurement_value = self.process.memory_info()[0] / (2**20)
+        # print(measurement_value)
         self.benchmark.log(self.description, self.measurement_type, measurement_value, "MiB")
         # time.sleep(self.interval)
 

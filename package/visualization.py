@@ -11,14 +11,14 @@ import matplotlib.ticker as ticker
 from sklearn.metrics import plot_confusion_matrix
 
 
-def visualize(uuid):
-    ## engine = create_engine('sqlite+pysqlite:///backblaze_benchmark.db')
-    engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
+def visualize(uuid, database_file):
+    engine = create_engine(f'sqlite+pysqlite:///{database_file}')
+    # engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
         df_dict = make_dataframe_from_database(uuid, session)
-        plot_measurement_type(df_dict, "Memory")
+        plot_measurement_type(df_dict, "Memory (psutil)")
         plot_confusion_matrix(df_dict)
         plot_time(df_dict)
         plot_throughput(df_dict)
@@ -147,6 +147,6 @@ def plot_latency(df):
 
 
 if __name__ == "__main__":
-    ## visualize('8a989821-f2e9-48da-ab41-36cb0fc6f580') ## Willi
+    visualize('aca3920c-2a79-4a6e-bb88-62b2c382e27c') ## Willi
     ## visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc") ## Jonas
-    visualize("e9bc18ae-eb3e-4268-beef-0c6e8e43c00a")  ## Christian
+    # visualize("e9bc18ae-eb3e-4268-beef-0c6e8e43c00a")  ## Christian

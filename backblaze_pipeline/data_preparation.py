@@ -33,7 +33,7 @@ h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
 @pkg.MeasureTime(bm, description="parsing of raw csv files into hashed hdf5")
 @pkg.MeasureThroughput(bm, description="parsing of raw csv files into hashed hdf5")
-@pkg.MeasureMemorySamples(bm, description="parsing of raw csv files into hashed hdf5")
+@pkg.MeasureMemoryPsutil(bm, description="parsing of raw csv files into hashed hdf5")
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:
@@ -62,7 +62,7 @@ def add_days_to_failure_col_to_group(group):
 
 
 @pkg.MeasureTime(bm, description="converting pandas to h5py")
-@pkg.MeasureMemorySamples(bm, interval=1, description="converting pandas to h5py")
+@pkg.MeasureMemoryPsutil(bm, interval=1, description="converting pandas to h5py")
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)
@@ -86,7 +86,7 @@ def transfer_from_pandas_to_h5py():
 
 
 @pkg.MeasureThroughput(bm, description="normalization and categorization")
-@pkg.MeasureMemorySamples(bm, description="normalization and categorization")
+@pkg.MeasureMemoryPsutil(bm, description="normalization and categorization")
 def normalization_and_categorization():
     X_h5 = h5py_hdf['X']
     y_h5 = h5py_hdf['y']
@@ -118,7 +118,7 @@ def normalization_and_categorization():
     return {'num_entries': len(X)}
 
 
-@pkg.MeasureMemorySamples(bm, description="split and resample dataset", interval=0.2)
+@pkg.MeasureMemoryPsutil(bm, description="split and resample dataset", interval=0.2)
 def dataset_splitting_and_resampling():
     X = h5py_hdf['X'][:,:]
     y = h5py_hdf['y'][:]

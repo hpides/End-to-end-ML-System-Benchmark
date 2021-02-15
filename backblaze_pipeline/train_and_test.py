@@ -14,7 +14,7 @@ from benchmarking import bm
 
 @pkg.MeasureThroughput(bm, description="Training throughput")
 @pkg.MeasureTime(bm, description="Training time")
-@pkg.MeasureMemorySamples(bm, description="Training memory")
+@pkg.MeasureMemoryPsutil(bm, description="Training memory")
 def train():
     with h5py.File('data/h5py.h5', 'r') as hdf:
         X_train = hdf['X_train'][:,:]
@@ -25,7 +25,7 @@ def train():
 
 
 @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
-@pkg.MeasureMemorySamples(bm, description="Testing/Validation results")
+@pkg.MeasureMemoryPsutil(bm, description="Testing/Validation results")
 def test(training_result):
     with h5py.File('data/h5py.h5', 'r') as hdf:
         classifier = training_result['classifier']
