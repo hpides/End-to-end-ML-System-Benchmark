@@ -9,13 +9,13 @@ import matplotlib.ticker as ticker
 from sklearn.metrics import plot_confusion_matrix
 
 
-def visualize(uuid, database_file):
+def visualize(uuids, database_file):
     engine = create_engine(f'sqlite+pysqlite:///{database_file}')
     # engine = create_engine('sqlite+pysqlite:///so2sat_benchmark.db')
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
-        df_dict = make_dataframe_from_database(uuid, session)
+        df_dict = make_dataframe_from_database_mult(uuids, session)
         plot_TTA(df_dict)
         plot_measurement_type(df_dict, "Memory (psutil)")
         plot_confusion_matrix(df_dict)
