@@ -4,6 +4,8 @@ import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
 import psutil
 import os
+import pyRAPL
+
 
 class Measure(object):
     name = None
@@ -27,6 +29,23 @@ class MeasureTime(Measure):
 
         return inner
 
+    
+## multiple run version    
+class MeasureTimeToAccuracy(Measure):
+    measurement_type = "TTA"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for i in range(1,11):                                       ## no. of epochs should be choosable by the user in the future
+                result = func(i, **kwargs)
+                accuracy = result["accuracy"]                           ## requires the decorated method (usually train()) to return a dict with the acc in it
+                print(accuracy)
+                self.benchmark.log(self.description, self.measurement_type, accuracy)
+                finalResult = result
+            return finalResult
+        return inner    
+    
 
 class MeasureMemorySamples(Measure):
     measurement_type = "Memory"
@@ -55,6 +74,41 @@ class MeasureMemorySamples(Measure):
         time.sleep(self.interval)
         return measurement_value
 
+
+## cant run in parallel to other thread using decorator for now (e.g. memory sampling)    
+class MeasureEnergy(Measure):
+    measurement_type = "Energy"
+
+    def __init__(self, benchmark, description, interval=1.0):
+        super().__init__(benchmark, description)
+        self.interval = interval
+        self.keep_measuring = True
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            with ThreadPoolExecutor() as tpe:
+                try:
+                    func_thread = tpe.submit(func, *args, **kwargs)
+                    pyRAPL.setup()
+                    meter = pyRAPL.Measurement('bar')
+                    meter.begin()
+                    while not func_thread.done() and self.keep_measuring:
+                        meter.end()
+                        self.log_energy(meter)
+                    result = func_thread.result()
+                finally:
+                    self.keep_measuring = False
+                return result
+
+        return inner
+
+    def log_energy(self, meter):
+        measurement_value = meter.result.pkg[0]
+        self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
+        meter.begin()
+        time.sleep(self.interval)
+        return measurement_value
+   
 
 class MeasureMemoryTracemalloc(Measure):
     measurement_type = "Memory (tracemalloc)"
