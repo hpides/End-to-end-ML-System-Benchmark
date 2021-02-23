@@ -87,20 +87,24 @@ def plot_TTA(df):
     ax = fig.add_subplot(111)
 
     tta_df = df.loc[(df.measurement_type == "TTA")]
-    epochs = []
-    for i in range(len(tta_df.value.values)):
-        epochs.append(i+1)
 
-    ax.plot(epochs,
-            tta_df.value.values.astype(float),
-            label="Time To Accuracy")
+    for uuid in tta_df.uuid.unique():
+        tta_uuid_df = tta_df.loc[(df.uuid == str(uuid))]
+        epochs = []
+        for i in range(len(tta_uuid_df.value.values)):
+            epochs.append(i+1)
 
+        ax.plot(epochs,
+                tta_uuid_df.value.values.astype(float),
+                label=uuid)
+
+    plt.legend(loc=2)
     ax.set_ylabel("Accuracy")
     ax.set_xlabel("Total Epochs in training")
     plt.title("Time (Epochs) to Accuracy")
 
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
-    plt.show()  
+    plt.show()
 
 
 def plot_energy(df):
