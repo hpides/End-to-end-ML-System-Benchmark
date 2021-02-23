@@ -30,23 +30,24 @@ class MeasureTime(Measure):
         return inner
 
     
-## multiple run version. Should only be used if version below doesn't work with the chosen training algorithm (i.e. cant return accuracy for each epoch) 
+# multiple run version. Should only be used if version below doesn't work with the chosen training algorithm
+# (i.e. cant return accuracy for each epoch)
 class MeasureTimeToAccuracyMult(Measure):
     measurement_type = "TTA"
 
     def __call__(self, func):
         def inner(*args, **kwargs):
             finalResult = None
-            for i in range(1,11):                                       ## no. of epochs should be choosable by the user in the future
+            for i in range(1,11):                                       # no. of epochs should be choosable by the user
                 result = func(i, **kwargs)
-                accuracy = result["accuracy"]                           ## requires the decorated method (usually train()) to return a dict with the acc in it
+                accuracy = result["accuracy"]
                 self.benchmark.log(self.description, self.measurement_type, accuracy)
                 finalResult = result
             return finalResult
         return inner
 
 
-## single run version. more efficient. needs array of accuracies for each epoch)
+# single run version. more efficient. needs array of accuracies for each epoch)
 class MeasureTimeToAccuracy(Measure):
     measurement_type = "TTA"
 
@@ -88,7 +89,7 @@ class MeasureMemorySamples(Measure):
         return measurement_value
 
 
-## cant run in parallel to other thread using decorator for now (e.g. memory sampling)    
+# cant run in parallel to other thread using decorator for now (e.g. memory sampling)
 class MeasureEnergy(Measure):
     measurement_type = "Energy"
 
@@ -192,7 +193,7 @@ class MeasureMemoryPsutil(Measure):
 class MeasureConfusion(Measure):
     measurement_type = "Confusion"
 
-    ## Erwartet ein Dict mit den Metriken als return type
+    # Erwartet ein Dict mit den Metriken als return type
 
     def __call__(self, func):
         def inner(*args, **kwargs):

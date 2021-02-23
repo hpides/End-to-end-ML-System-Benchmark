@@ -1,11 +1,10 @@
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 from benchmarking import bm
-
 from data_preparation import prepare_data
 from train_and_test import train_and_test
+
+sys.path.insert(0, os.getcwd())
 
 
 def main():

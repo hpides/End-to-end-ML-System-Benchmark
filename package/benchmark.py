@@ -2,7 +2,6 @@ from datetime import datetime
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 from uuid import uuid4
-
 from .datamodel import Base, Measurement, BenchmarkMetadata
 
 

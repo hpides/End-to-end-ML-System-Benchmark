@@ -3,7 +3,6 @@ from datamodel import BenchmarkMetadata
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 import os
-
 import visualization
 
 parser = argparse.ArgumentParser(description="Visualization CLI for End to End ML System Benchmark")
@@ -46,4 +45,3 @@ def main():
 
 if __name__ == "__main__":
     main()
-

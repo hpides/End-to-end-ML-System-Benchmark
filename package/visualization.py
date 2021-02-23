@@ -1,11 +1,9 @@
-from datamodel import Measurement, BenchmarkMetadata
+from datamodel import Measurement
 from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, desc, asc
-
+from sqlalchemy import create_engine, asc
 import pandas as pd
 import seaborn as sn
 import numpy as np
-
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from sklearn.metrics import plot_confusion_matrix
@@ -18,6 +16,7 @@ def visualize(uuid, database_file):
     session = Session()
     try:
         df_dict = make_dataframe_from_database(uuid, session)
+        plot_TTA(df_dict)
         plot_measurement_type(df_dict, "Memory (psutil)")
         plot_confusion_matrix(df_dict)
         plot_time(df_dict)
@@ -33,18 +32,21 @@ def visualize(uuid, database_file):
 
 
 def make_dataframe_from_database(uuid, session):
-    measure_query = session.query(Measurement.datetime,
+    measure_query = session.query(Measurement.benchmark_uuid,
+                                  Measurement.datetime,
                                   Measurement.description,
                                   Measurement.measurement_type,
                                   Measurement.value,
                                   Measurement.unit)
     measure_query = measure_query.filter_by(benchmark_uuid=uuid).order_by(asc(Measurement.datetime))
 
-    df = pd.DataFrame(measure_query.all(), columns=["datetime", "description", "measurement_type", "value", "unit"])
+    df = pd.DataFrame(measure_query.all(), columns=["uuid", "datetime", "description", "measurement_type", "value",
+                                                    "unit"])
 
     return df
 
-## visualite multiple uuids, also works with only a single one
+
+# visualize multiple uuids, also works with only a single one
 def make_dataframe_from_database_mult(uuids, session):
     measure_query = session.query(Measurement.benchmark_uuid,
                                   Measurement.datetime,
@@ -107,6 +109,8 @@ def plot_TTA(df):
     plt.show()
 
 
+# currently need to cutoff first value due to first value always being 0
+# needs to be changed sometime in decorators.py
 def plot_energy(df):
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
@@ -121,8 +125,8 @@ def plot_energy(df):
             for i in range(len(description_df.datetime.values)):
                 timevalues.append(len(description_df.datetime.values)*i/duration + currentTimestamp)
             currentTimestamp = timevalues[len(timevalues)-1]
-            ax.plot(timevalues[1:len(description_df.datetime.values)],                                      ## currently need to cutoff first value due to first value always being 0
-                    description_df.value.values.astype(float)[1:len(description_df.datetime.values)],       ## needs to be changed sometime in decorators.py
+            ax.plot(timevalues[1:len(description_df.datetime.values)],
+                    description_df.value.values.astype(float)[1:len(description_df.datetime.values)],
                     label=description)
 
     ax.set_ylabel("mJ of energy usage")
@@ -218,6 +222,6 @@ def plot_latency(df):
 
 
 if __name__ == "__main__":
-    visualize('aca3920c-2a79-4a6e-bb88-62b2c382e27c') ## Willi
-    ## visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc") ## Jonas
-    # visualize("e9bc18ae-eb3e-4268-beef-0c6e8e43c00a")  ## Christian
+    visualize('aca3920c-2a79-4a6e-bb88-62b2c382e27c')   ## Willi
+    # visualize("a8c2115c-0d6a-4cbc-ad47-445289d136fc") ## Jonas
+    # visualize("e9bc18ae-eb3e-4268-beef-0c6e8e43c00a") ## Christian

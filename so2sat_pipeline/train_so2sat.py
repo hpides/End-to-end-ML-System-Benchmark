@@ -4,13 +4,15 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras.optimizers import Adam
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
 
+sys.path.insert(0, os.getcwd())
+
+
 @pkg.MeasureTime(bm, description="Training time")
 @pkg.MeasureThroughput(bm, description="Training throughput")
+@pkg.MeasureTimeToAccuracy(bm, description="Time to Accuracy")
 def train():
 
     # Model configuration
@@ -22,7 +24,8 @@ def train():
     optimizer = Adam()
     verbosity = 1
 
-    n = 32768           ## 2**15
+    # n = 32768           # 2**15
+    n = 1024
 
     # Load data
     f = h5py.File('data/training.h5', 'r')
@@ -64,4 +67,10 @@ def train():
                 verbose=verbosity,
                 validation_data=(input_val, label_val))
 
-    return {"model": model, "num_entries": len(input_train), "classifier": optimizer, "accuracy": history.history["accuracy"][-1]}
+    # multiple run version
+    # return {"model": model, "num_entries": len(input_train), "classifier": optimizer,
+    #         "accuracy": history.history["accuracy"][-1]}
+
+    # single run version
+    return {"model": model, "num_entries": len(input_train), "classifier": optimizer,
+            "accuracy": history.history["accuracy"]}

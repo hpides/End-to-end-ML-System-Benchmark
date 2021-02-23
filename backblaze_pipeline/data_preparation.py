@@ -2,7 +2,6 @@ from collections import Counter
 import os
 import re
 import sys
-
 import h5py
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
@@ -10,18 +9,17 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
 
-
+sys.path.insert(0, os.getcwd())
 raw_data_path = "data/raw"
 pandas_h5_path = "data/pandas.h5"
 h5py_h5_path = "data/h5py.h5"
 
 feature_col_types = {'date': 'datetime64', 'serial_number': str,
-                     'smart_197_raw': 'float', 'smart_9_raw': 'float', 'smart_241_raw': 'float', 'smart_187_raw': 'float',
+                     'smart_197_raw': 'float', 'smart_9_raw': 'float', 'smart_241_raw': 'float',
+                     'smart_187_raw': 'float',
                      'failure': 'bool'}
 feature_col_names = list(feature_col_types.keys())
 smart_col_names = [name for name in feature_col_names if name.startswith('smart')]
@@ -77,8 +75,8 @@ def transfer_from_pandas_to_h5py():
             df = groupby.apply(add_days_to_failure_col_to_group)
             X_chunk = df[smart_col_names].values
             y_chunk = df['days_to_failure'].values
-            X_h5[offset:offset+len(X_chunk), :] = X_chunk
-            y_h5[offset:offset+len(y_chunk)] = y_chunk
+            X_h5[offset:offset + len(X_chunk), :] = X_chunk
+            y_h5[offset:offset + len(y_chunk)] = y_chunk
             offset += len(X_chunk)
             process_bar.update()
             process_bar.set_description(
@@ -120,7 +118,7 @@ def normalization_and_categorization():
 
 @pkg.MeasureMemoryPsutil(bm, description="split and resample dataset", interval=0.2)
 def dataset_splitting_and_resampling():
-    X = h5py_hdf['X'][:,:]
+    X = h5py_hdf['X'][:, :]
     y = h5py_hdf['y'][:]
 
     # split dataset

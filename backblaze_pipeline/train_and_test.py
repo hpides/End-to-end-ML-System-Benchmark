@@ -1,15 +1,12 @@
-from collections import Counter
 import os
 import sys
-
 import h5py
-import matplotlib.pyplot as plt
 from sklearn.ensemble import RandomForestClassifier
-from sklearn.metrics import confusion_matrix, ConfusionMatrixDisplay
-
-sys.path.insert(0, os.getcwd())
+from sklearn.metrics import confusion_matrix
 import package as pkg
 from benchmarking import bm
+
+sys.path.insert(0, os.getcwd())
 
 
 @pkg.MeasureThroughput(bm, description="Training throughput")
@@ -37,9 +34,11 @@ def test(training_result):
         # ConfusionMatrixDisplay(conf_mat, classes).plot()
         return {"confusion matrix": conf_mat, "classes": classes}
 
+
 def train_and_test():
     classifier = train()
     test(classifier)
+
 
 if __name__ == "__main__":
     train_and_test()

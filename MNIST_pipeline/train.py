@@ -2,17 +2,17 @@ import torch
 import torch.nn as nn
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
+
+sys.path.insert(0, os.getcwd())
 
 
 @pkg.MeasureTime(bm, description="Training time")
 @pkg.MeasureThroughput(bm, description="Training throughput")
 @pkg.MeasureLatency(bm, description="Training latency")
 @pkg.MeasureMemorySamples(bm, description="Training memory usage")
-## @pkg.MeasureMemoryTracemalloc(bm, description="Training memory usage")
+# @pkg.MeasureMemoryTracemalloc(bm, description="Training memory usage")
 def train(model, trainloader):
 
     n_epochs = 10  # suggest training between 20-50 epochs

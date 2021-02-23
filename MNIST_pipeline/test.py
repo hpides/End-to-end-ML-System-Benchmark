@@ -3,16 +3,16 @@ import numpy as np
 import torch.nn as nn
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
 
+sys.path.insert(0, os.getcwd())
+
 
 @pkg.MeasureTime(bm, description="Testing time")
-## @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
+# @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
 @pkg.MeasureMemorySamples(bm, description="Testing memory usage")
-## @pkg.MeasureMemoryTracemalloc(bm, description="Testing memory usage")
+# @pkg.MeasureMemoryTracemalloc(bm, description="Testing memory usage")
 def test(model, testloader):
 
     criterion = nn.NLLLoss()

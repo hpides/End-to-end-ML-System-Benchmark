@@ -5,15 +5,15 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
+
+sys.path.insert(0, os.getcwd())
 
 
 @pkg.MeasureTime(bm, description="time spent on preparing data")
 @pkg.MeasureMemorySamples(bm, description="memory usage of data preparation")
-## @pkg.MeasureMemoryTracemalloc(bm, description="memory usage of data preparation")
+# @pkg.MeasureMemoryTracemalloc(bm, description="memory usage of data preparation")
 def data_preparation():
 
     # number of subprocesses to use for data loading
@@ -35,7 +35,6 @@ def data_preparation():
         num_workers=num_workers)
     testloader = torch.utils.data.DataLoader(testset, batch_size=batch_size,
         num_workers=num_workers)
-
 
     class Net(nn.Module):
         def __init__(self):
@@ -60,7 +59,3 @@ def data_preparation():
     model = Net()
 
     return [model, trainloader, testloader]
-
-
-
-

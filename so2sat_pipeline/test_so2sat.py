@@ -3,16 +3,18 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
 import sys
-
-sys.path.insert(0, os.getcwd())
 import package as pkg
 from benchmarking import bm
+
+sys.path.insert(0, os.getcwd())
+
 
 @pkg.MeasureTime(bm, description="Testing time")
 @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
 def test(model):
 
-    n = 32768  ## 2**15
+    # n = 32768  # 2**15
+    n = 1024
     img_width, img_height, img_num_channels = 32, 32, 8
 
     f = h5py.File('data/testing.h5', 'r')
