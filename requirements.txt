@@ -10,11 +10,13 @@ numpy
 pandas
 Pillow
 pyparsing
+pyRAPL
 python-dateutil
 pytz
 rope
 scikit-learn
 scipy
+seaborn
 six
 SQLAlchemy
 tables
