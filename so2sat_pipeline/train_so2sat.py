@@ -64,4 +64,4 @@ def train():
                 verbose=verbosity,
                 validation_data=(input_val, label_val))
 
-    return {"model": model, "num_entries": len(input_train), "classifier": optimizer}
+    return {"model": model, "num_entries": len(input_train), "classifier": optimizer, "accuracy": history.history["accuracy"][-1]}
