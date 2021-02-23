@@ -64,7 +64,7 @@ class MeasureTimeToAccuracy(Measure):
 class MeasureMemorySamples(Measure):
     measurement_type = "Memory"
 
-    def __init__(self, benchmark, description, interval=0.1):
+    def __init__(self, benchmark, description, interval=1.0):
         super().__init__(benchmark, description)
         self.interval = interval
         self.keep_measuring = True
@@ -100,6 +100,7 @@ class MeasureEnergy(Measure):
 
     def __call__(self, func):
         def inner(*args, **kwargs):
+            measure = False
             with ThreadPoolExecutor() as tpe:
                 try:
                     func_thread = tpe.submit(func, *args, **kwargs)
@@ -108,7 +109,8 @@ class MeasureEnergy(Measure):
                     meter.begin()
                     while not func_thread.done() and self.keep_measuring:
                         meter.end()
-                        self.log_energy(meter)
+                        self.log_energy(meter, measure)
+                        measure = True
                     result = func_thread.result()
                 finally:
                     self.keep_measuring = False
@@ -116,10 +118,11 @@ class MeasureEnergy(Measure):
 
         return inner
 
-    def log_energy(self, meter):
+    def log_energy(self, meter, measure):
         measurement_value = meter.result.pkg[0]
-        self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
-        meter.begin()
+        if measure:
+            self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
+            meter.begin()
         time.sleep(self.interval)
         return measurement_value
    
@@ -127,7 +130,7 @@ class MeasureEnergy(Measure):
 class MeasureMemoryTracemalloc(Measure):
     measurement_type = "Memory (tracemalloc)"
 
-    def __init__(self, benchmark, description, interval=0.1):
+    def __init__(self, benchmark, description, interval=1.0):
         super().__init__(benchmark, description)
         self.interval = interval
         self.keep_measuring = True
@@ -158,7 +161,7 @@ class MeasureMemoryTracemalloc(Measure):
 class MeasureMemoryPsutil(Measure):
     measurement_type = "Memory (psutil)"
 
-    def __init__(self, benchmark, description, interval=0.1):
+    def __init__(self, benchmark, description, interval=1.0):
         super().__init__(benchmark, description)
         self.interval = interval
         self.keep_measuring = True
