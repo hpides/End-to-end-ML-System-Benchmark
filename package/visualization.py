@@ -44,6 +44,25 @@ def make_dataframe_from_database(uuid, session):
 
     return df
 
+## visualite multiple uuids, also works with only a single one
+def make_dataframe_from_database_mult(uuids, session):
+    measure_query = session.query(Measurement.benchmark_uuid,
+                                  Measurement.datetime,
+                                  Measurement.description,
+                                  Measurement.measurement_type,
+                                  Measurement.value,
+                                  Measurement.unit)
+
+    query = measure_query.filter_by(benchmark_uuid=uuids[0])
+    for uuid in range(1, len(uuids)):
+        temp_query = measure_query.filter_by(benchmark_uuid=uuids[uuid])
+        query = query.union(temp_query)
+    query = query.order_by(asc(Measurement.datetime))
+
+    df = pd.DataFrame(query.all(), columns=["uuid", "datetime", "description", "measurement_type", "value", "unit"])
+
+    return df
+
 
 def plot_measurement_type(df, measurement_type):
     fig = plt.figure(figsize=(12, 8))
@@ -62,6 +81,54 @@ def plot_measurement_type(df, measurement_type):
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
     plt.show()
 
+    
+def plot_TTA(df):
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+
+    tta_df = df.loc[(df.measurement_type == "TTA")]
+    epochs = []
+    for i in range(len(tta_df.value.values)):
+        epochs.append(i+1)
+
+    ax.plot(epochs,
+            tta_df.value.values.astype(float),
+            label="Time To Accuracy")
+
+    ax.set_ylabel("Accuracy")
+    ax.set_xlabel("Total Epochs in training")
+    plt.title("Time (Epochs) to Accuracy")
+
+    ax.yaxis.set_major_locator(ticker.LinearLocator(12))
+    plt.show()  
+
+
+def plot_energy(df):
+    fig = plt.figure(figsize=(12, 8))
+    ax = fig.add_subplot(111)
+
+    currentTimestamp = 0
+    for description in df.description.unique():
+        description_df = df.loc[(df.measurement_type == "Energy") & (df.description == description)]
+        if len(description_df) != 0:
+            duration = round((description_df.datetime.values[len(description_df.datetime.values) - 1] -
+                              description_df.datetime.values[0]) / np.timedelta64(1, 's'))
+            timevalues = []
+            for i in range(len(description_df.datetime.values)):
+                timevalues.append(len(description_df.datetime.values)*i/duration + currentTimestamp)
+            currentTimestamp = timevalues[len(timevalues)-1]
+            ax.plot(timevalues[1:len(description_df.datetime.values)],                                      ## currently need to cutoff first value due to first value always being 0
+                    description_df.value.values.astype(float)[1:len(description_df.datetime.values)],       ## needs to be changed sometime in decorators.py
+                    label=description)
+
+    ax.set_ylabel("mJ of energy usage")
+    ax.set_xlabel("Time in seconds")
+    plt.legend(loc=2)
+    plt.title("Energy consumption")
+
+    ax.yaxis.set_major_locator(ticker.LinearLocator(12))
+    plt.show()    
+    
 
 def plot_confusion_matrix(df):
     values = df.loc[df.measurement_type == "Multiclass Confusion Matrix"].value.values
