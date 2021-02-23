@@ -40,7 +40,7 @@ def main():
             session.close()
 
     else:
-        visualization.visualize(args.uuid, args.database)
+        visualization.visualize([args.uuid], args.database)
 
 
 if __name__ == "__main__":
