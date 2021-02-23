@@ -30,8 +30,8 @@ class MeasureTime(Measure):
         return inner
 
     
-## multiple run version    
-class MeasureTimeToAccuracy(Measure):
+## multiple run version. Should only be used if version below doesn't work with the chosen training algorithm (i.e. cant return accuracy for each epoch) 
+class MeasureTimeToAccuracyMult(Measure):
     measurement_type = "TTA"
 
     def __call__(self, func):
@@ -40,10 +40,23 @@ class MeasureTimeToAccuracy(Measure):
             for i in range(1,11):                                       ## no. of epochs should be choosable by the user in the future
                 result = func(i, **kwargs)
                 accuracy = result["accuracy"]                           ## requires the decorated method (usually train()) to return a dict with the acc in it
-                print(accuracy)
                 self.benchmark.log(self.description, self.measurement_type, accuracy)
                 finalResult = result
             return finalResult
+        return inner
+
+
+## single run version. more efficient. needs array of accuracies for each epoch)
+class MeasureTimeToAccuracy(Measure):
+    measurement_type = "TTA"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            accuracy = result["accuracy"]
+            for i in range(len(accuracy)):
+                self.benchmark.log(self.description, self.measurement_type, accuracy[i])
+            return result
         return inner    
     
 
