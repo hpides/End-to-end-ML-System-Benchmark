@@ -5,6 +5,7 @@ A modular suite for benchmarking all stages of Machine Learning pipelines. To fi
 ## Current metrics include:
 * Time spent
 * Memory usage
+* Loss (single run and multiple runs)
 * Time to Accuracy (single run and multiple runs)
 * Power usage
 * Multiclass Confusion Matrix
