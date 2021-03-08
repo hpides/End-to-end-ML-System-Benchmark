@@ -1,7 +1,9 @@
-data/*
-.idea
-.ipynb_checkpoints/*
-*/__pycache__
+data
+__pycache__
+*benchmark.db
 env
+e2ebench.egg-info
+
+.idea
+.ipynb_checkpoints
 .vscode
-backblaze_benchmark.db

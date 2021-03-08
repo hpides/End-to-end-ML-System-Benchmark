@@ -5,14 +5,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import sys
-import package as pkg
+import e2ebench
 from benchmarking import bm
 
-sys.path.insert(0, os.getcwd())
 
-
-@pkg.MeasureTime(bm, description="time spent on preparing data")
-@pkg.MeasureMemorySamples(bm, description="memory usage of data preparation")
+@e2ebench.MeasureTime(bm, description="time spent on preparing data")
+@e2ebench.MeasureMemorySamples(bm, description="memory usage of data preparation")
 # @pkg.MeasureMemoryTracemalloc(bm, description="memory usage of data preparation")
 def data_preparation():
 
@@ -25,9 +23,9 @@ def data_preparation():
     transform = transforms.ToTensor()
 
     # choose the training and test datasets
-    trainset = datasets.MNIST(root='MNIST data', train=True,
+    trainset = datasets.MNIST(root='data', train=True,
                                        download=True, transform=transform)
-    testset = datasets.MNIST(root='MNIST data', train=False,
+    testset = datasets.MNIST(root='data', train=False,
                                       download=True, transform=transform)
 
     # prepare data loaders

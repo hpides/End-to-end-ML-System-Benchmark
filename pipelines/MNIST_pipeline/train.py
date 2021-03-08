@@ -2,16 +2,13 @@ import torch
 import torch.nn as nn
 import os
 import sys
-import package as pkg
+import e2ebench
 from benchmarking import bm
 
-sys.path.insert(0, os.getcwd())
-
-
-@pkg.MeasureTime(bm, description="Training time")
-@pkg.MeasureThroughput(bm, description="Training throughput")
-@pkg.MeasureLatency(bm, description="Training latency")
-@pkg.MeasureMemorySamples(bm, description="Training memory usage")
+@e2ebench.MeasureTime(bm, description="Training time")
+@e2ebench.MeasureThroughput(bm, description="Training throughput")
+@e2ebench.MeasureLatency(bm, description="Training latency")
+@e2ebench.MeasureMemorySamples(bm, description="Training memory usage")
 # @pkg.MeasureMemoryTracemalloc(bm, description="Training memory usage")
 def train(model, trainloader):
 

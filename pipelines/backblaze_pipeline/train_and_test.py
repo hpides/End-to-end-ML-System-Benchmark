@@ -3,15 +3,12 @@ import sys
 import h5py
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
-import package as pkg
+import e2ebench
 from benchmarking import bm
 
-sys.path.insert(0, os.getcwd())
-
-
-@pkg.MeasureThroughput(bm, description="Training throughput")
-@pkg.MeasureTime(bm, description="Training time")
-@pkg.MeasureMemoryPsutil(bm, description="Training memory")
+@e2ebench.MeasureThroughput(bm, description="Training throughput")
+@e2ebench.MeasureTime(bm, description="Training time")
+@e2ebench.MeasureMemoryPsutil(bm, description="Training memory")
 def train():
     with h5py.File('data/h5py.h5', 'r') as hdf:
         X_train = hdf['X_train'][:,:]
@@ -21,8 +18,8 @@ def train():
         return {'num_entries': len(X_train), 'classifier': classifier}
 
 
-@pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
-@pkg.MeasureMemoryPsutil(bm, description="Testing/Validation results")
+@e2ebench.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
+@e2ebench.MeasureMemoryPsutil(bm, description="Testing/Validation results")
 def test(training_result):
     with h5py.File('data/h5py.h5', 'r') as hdf:
         classifier = training_result['classifier']

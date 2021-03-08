@@ -3,14 +3,12 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
 import sys
-import package as pkg
+import e2ebench
 from benchmarking import bm
 
-sys.path.insert(0, os.getcwd())
 
-
-@pkg.MeasureTime(bm, description="Testing time")
-@pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
+@e2ebench.MeasureTime(bm, description="Testing time")
+@e2ebench.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
 def test(model):
 
     # n = 32768  # 2**15
