@@ -95,63 +95,30 @@ def plot_time_based_graph(df, measurement_type, title, xlabel, ylabel):
     plt.show()
 
 
-def plot_memory(df):
-
-    plot_time_based_graph(df, "Memory", "Memory usage", "Time in seconds", "MB used")
-
-
-def plot_energy(df):
-    plot_time_based_graph(df, "Energy", "Power consumption", "Time in seconds", "mJ of energy usage")
-
-
-def plot_TTA(df):
+def plot_epoch_based_graph(df, measurement_type, title, xlabel, ylabel):
 
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
 
-    tta_df = df.loc[(df.measurement_type == "TTA")]
+    tta_df = df.loc[(df.measurement_type == measurement_type)]
 
     for uuid in tta_df.uuid.unique():
         tta_uuid_df = tta_df.loc[(df.uuid == uuid)]
         epochs = []
         for i in range(len(tta_uuid_df.value.values)):
-            epochs.append(i+1)
+            epochs.append(i + 1)
 
         ax.plot(epochs,
                 tta_uuid_df.value.values.astype(float),
                 label=uuid)
 
     plt.legend(loc=2)
-    ax.set_ylabel("Accuracy")
-    ax.set_xlabel("Total Epochs in training")
-    plt.title("Time (Epochs) to Accuracy")
+    ax.set_ylabel(ylabel)
+    ax.set_xlabel(xlabel)
+    plt.title(title)
 
     ax.yaxis.set_major_locator(ticker.LinearLocator(12))
     plt.show()
-
-
-def plot_confusion_matrix(df):
-
-    for uuid in df.uuid.unique():
-
-        values = df.loc[(df.measurement_type == "Multiclass Confusion Matrix") & (df.uuid == uuid)].value.values
-        if len(values) == 0:
-            break
-        classes = df.loc[(df.measurement_type == "Multiclass Confusion Matrix Class") & (df.uuid == uuid)].value.values
-
-        con_mat = []
-
-        for i in range(len(classes)):
-            con_mat_row = []
-            for j in range(len(classes)):
-                con_mat_row.append(int(values[j + i * len(classes)]))
-            con_mat.append(con_mat_row)
-
-        matrix = pd.DataFrame(con_mat, index=classes, columns=classes)
-        plt.figure(figsize=(12, 8))
-        plt.title("Confusion Matrix for run " + uuid)
-        sn.heatmap(matrix, annot=True)
-        plt.show()
 
 
 def plot_barh(df, measurement_type, title, xlabel):
@@ -183,23 +150,61 @@ def plot_barh(df, measurement_type, title, xlabel):
     plt.show()
 
 
-def plot_time(df):
+def plot_confusion_matrix(df):
 
+    for uuid in df.uuid.unique():
+
+        values = df.loc[(df.measurement_type == "Multiclass Confusion Matrix") & (df.uuid == uuid)].value.values
+        if len(values) == 0:
+            break
+        classes = df.loc[(df.measurement_type == "Multiclass Confusion Matrix Class") & (df.uuid == uuid)].value.values
+
+        con_mat = []
+
+        for i in range(len(classes)):
+            con_mat_row = []
+            for j in range(len(classes)):
+                con_mat_row.append(int(values[j + i * len(classes)]))
+            con_mat.append(con_mat_row)
+
+        matrix = pd.DataFrame(con_mat, index=classes, columns=classes)
+        plt.figure(figsize=(12, 8))
+        plt.title("Confusion Matrix for run " + uuid)
+        sn.heatmap(matrix, annot=True)
+        plt.show()
+
+
+def plot_memory(df):
+    plot_time_based_graph(df, "Memory", "Memory usage", "Time in seconds", "MB used")
+
+
+def plot_energy(df):
+    plot_time_based_graph(df, "Energy", "Power consumption", "Time in seconds", "mJ of energy usage")
+
+
+def plot_TTA(df):
+    plot_epoch_based_graph(df, "TTA", "Time (Epochs) to Accuracy", "Total Epochs in training", "Accuracy")
+
+
+def plot_loss(df):
+    plot_epoch_based_graph(df, "Loss", "Training loss in each epoch", "Total Epochs in training", "Loss")
+
+
+def plot_time(df):
     plot_barh(df, "Time", "Time spent in phases", "Time in seconds")
 
 
 def plot_throughput(df):
-
     plot_barh(df, "Throughput", "Throughput", "Seconds per entry")
 
 
 def plot_latency(df):
-
     plot_barh(df, "Latency", "Latency", "Entries per second")
 
 
 metrics_dict = {"Time": plot_time,
                 "TTA": plot_TTA,
+                "Loss": plot_loss,
                 "Memory": plot_memory,
                 "Energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
@@ -208,4 +213,5 @@ metrics_dict = {"Time": plot_time,
 
 
 if __name__ == "__main__":
-    visualize(["c147975f-8a5e-4a90-8f01-9bc62e63f33b", "c01850e8-8ab7-4819-9074-f2ea132317b4"], "so2sat_benchmark.db")
+    #visualize(["892bb777-6013-4592-a630-2e95cc21f469"], "so2sat_benchmark.db")
+    visualize(["0ed1262c-fd64-413c-9cc1-f7d1a537616b"], "MNIST_benchmark.db")
