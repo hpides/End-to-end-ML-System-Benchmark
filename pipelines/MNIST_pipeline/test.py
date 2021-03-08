@@ -3,15 +3,13 @@ import numpy as np
 import torch.nn as nn
 import os
 import sys
-import package as pkg
+import e2ebench
 from benchmarking import bm
 
-sys.path.insert(0, os.getcwd())
 
-
-@pkg.MeasureTime(bm, description="Testing time")
+@e2ebench.MeasureTime(bm, description="Testing time")
 # @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
-@pkg.MeasureMemorySamples(bm, description="Testing memory usage")
+@e2ebench.MeasureMemorySamples(bm, description="Testing memory usage")
 # @pkg.MeasureMemoryTracemalloc(bm, description="Testing memory usage")
 def test(model, testloader):
 

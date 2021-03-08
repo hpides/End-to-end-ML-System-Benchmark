@@ -1,7 +1,7 @@
-data/*
+*data*
 .idea
 .ipynb_checkpoints/*
 */__pycache__
-env
+*/env
 .vscode
 backblaze_benchmark.db
