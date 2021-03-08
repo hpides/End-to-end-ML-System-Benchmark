@@ -58,7 +58,35 @@ class MeasureTimeToAccuracy(Measure):
             for i in range(len(accuracy)):
                 self.benchmark.log(self.description, self.measurement_type, accuracy[i])
             return result
-        return inner    
+        return inner
+
+
+class MeasureLoss(Measure):
+    measurement_type = "Loss"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            loss = result["loss"]
+            for i in range(len(loss)):
+                self.benchmark.log(self.description, self.measurement_type, loss[i])
+            return result
+        return inner
+
+
+class MeasureLossMult(Measure):
+    measurement_type = "TTA"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for i in range(1,11):                                       # no. of epochs should be choosable by the user
+                result = func(i, **kwargs)
+                loss = result["loss"]
+                self.benchmark.log(self.description, self.measurement_type, loss)
+                finalResult = result
+            return finalResult
+        return inner
     
 
 class MeasureMemorySamples(Measure):
@@ -240,6 +268,7 @@ class MeasureConfusion(Measure):
         return inner
 
 
+# For Sklearn
 class MeasureMulticlassConfusion(Measure):
     measurement_type = "Multiclass Confusion Matrix"
 
@@ -250,6 +279,25 @@ class MeasureMulticlassConfusion(Measure):
                 self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
                 for j in range((len(result["confusion matrix"]))):
                     self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j]))
+
+            result["confusion matrix"] = str(result["confusion matrix"])
+            result["classes"] = str(result["classes"])
+            return result
+
+        return inner
+
+
+# For Tensorflow
+class MeasureMulticlassConfusionTF(Measure):
+    measurement_type = "Multiclass Confusion Matrix"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            for i in range(len(result["confusion matrix"])):
+                self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
+                for j in range((len(result["confusion matrix"]))):
+                    self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j].numpy()))
 
             result["confusion matrix"] = str(result["confusion matrix"])
             result["classes"] = str(result["classes"])
