@@ -75,7 +75,7 @@ class MeasureLoss(Measure):
 
 
 class MeasureLossMult(Measure):
-    measurement_type = "TTA"
+    measurement_type = "Loss"
 
     def __call__(self, func):
         def inner(*args, **kwargs):
