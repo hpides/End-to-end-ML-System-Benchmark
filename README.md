@@ -6,6 +6,7 @@ A modular suite for benchmarking all stages of Machine Learning pipelines. To fi
 * Time spent
 * Memory usage
 * Loss (single run and multiple runs)
+* Influence of batch size and #epochs
 * Time to Accuracy (single run and multiple runs)
 * Power usage
 * Multiclass Confusion Matrix
