@@ -1,6 +1,9 @@
 import matplotlib.pyplot as plt
 import pandas as pd
 import numpy as np
+import os
+import sys
+import e2ebench
 
 
 @e2ebench.MeasureTime(bm, description="Testing Time")
