@@ -4,6 +4,9 @@ from keras.models import Sequential
 from keras.layers import *
 from sklearn.preprocessing import MinMaxScaler
 
+
+@e2ebench.MeasureTime(bm, description="Preparation Time")
+@e2ebench.MeasureEnergy(bm, description="Preparation Energy usage")
 def prepare_data():
 
     # download a CSV of your choice on yahoo finance
