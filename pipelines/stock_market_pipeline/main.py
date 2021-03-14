@@ -9,8 +9,8 @@ from benchmarking import bm
 
 def main():
     df, model, X_train, y_train, sc = data_preparation.prepare_data()
-    model = train.train(model, X_train, y_train)
-    test.test(df, model, sc)
+    train_result = train.train(model, X_train, y_train)
+    test.test(df, train_result["model"], sc)
     bm.close()
 
 
