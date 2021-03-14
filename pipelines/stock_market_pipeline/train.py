@@ -1,6 +1,8 @@
 from benchmarking import bm
-import e2ebench
 from tensorflow.keras.optimizers import Adam
+import os
+import sys
+import e2ebench
 
 
 @e2ebench.MeasureLearningRate(bm, description="Learning Rate")
