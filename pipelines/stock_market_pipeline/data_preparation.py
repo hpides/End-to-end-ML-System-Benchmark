@@ -3,6 +3,9 @@ import numpy as np
 from keras.models import Sequential
 from keras.layers import *
 from sklearn.preprocessing import MinMaxScaler
+import os
+import sys
+import e2ebench
 
 
 @e2ebench.MeasureTime(bm, description="Preparation Time")
