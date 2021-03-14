@@ -3,6 +3,8 @@ import pandas as pd
 import numpy as np
 
 
+@e2ebench.MeasureTime(bm, description="Testing Time")
+# @e2ebench.MeasureEnergy(bm, description="Testing Energy usage")
 def test(df, model, sc):
 
     # Getting the predicted stock price of 2017
