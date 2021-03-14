@@ -40,7 +40,4 @@ def prepare_data():
     model.add(Dropout(0.2))# Adding the output layer
     model.add(Dense(units = 1))
 
-    # Compiling the RNN
-    model.compile(optimizer = 'adam', loss = 'mean_squared_error')
-
     return df, model, X_train, y_train, sc
