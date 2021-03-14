@@ -1,4 +1,5 @@
 from datamodel import Measurement
+from datamodel import BenchmarkMetadata
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 import pandas as pd
@@ -6,6 +7,8 @@ import seaborn as sn
 import numpy as np
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
+from matplotlib import cm
+from math import floor
 
 
 def visualize(uuids, database_file):
@@ -13,16 +16,16 @@ def visualize(uuids, database_file):
     Session = sessionmaker(bind=engine)
     session = Session()
     try:
-        df = make_dataframe_from_database(uuids, session)
-        metrics = df.measurement_type.unique()
+        values, meta = make_dataframe_from_database(uuids, session)
+        metrics = values.measurement_type.unique()
 
         for metric in metrics:
             if metric == "Multiclass Confusion Matrix Class":           # helper class for MCCM, not a metric on its own
                 continue
             for uuid in uuids:
-                filtered_df = df.loc[(df.measurement_type == metric) & (df.uuid == uuid)]
+                filtered_df = values.loc[(values.measurement_type == metric) & (values.uuid == uuid)]
                 if len(filtered_df) != 0:
-                    metrics_dict[metric](df)
+                    metrics_dict[metric](values, meta)
                     break
 
         session.commit()
@@ -43,29 +46,73 @@ def make_dataframe_from_database(uuids, session):
                                   Measurement.value,
                                   Measurement.unit)
 
-    query = measure_query.filter_by(benchmark_uuid=uuids[0])
+    meta_query = session.query(BenchmarkMetadata.uuid,
+                               BenchmarkMetadata.description,
+                               BenchmarkMetadata.start_time)
+
+    filtered_measure_query = measure_query.filter_by(benchmark_uuid=uuids[0])
+    filtered_meta_query = meta_query.filter_by(uuid=uuids[0])
     for uuid in range(1, len(uuids)):
-        temp_query = measure_query.filter_by(benchmark_uuid=uuids[uuid])
-        query = query.union(temp_query)
-    query = query.order_by(asc(Measurement.datetime))
+        temp_measure_query = measure_query.filter_by(benchmark_uuid=uuids[uuid])
+        temp_meta_query = meta_query.filter_by(uuid=uuids[uuid])
+        filtered_measure_query = filtered_measure_query.union(temp_measure_query)
+        filtered_meta_query = filtered_meta_query.union(temp_meta_query)
+    filtered_measure_query = filtered_measure_query.order_by(asc(Measurement.datetime))
+    filtered_meta_query = filtered_meta_query.order_by(asc(BenchmarkMetadata.start_time))
 
-    df = pd.DataFrame(query.all(), columns=["uuid", "datetime", "description", "measurement_type", "value", "unit"])
+    values = pd.DataFrame(filtered_measure_query.all(), columns=["uuid", "datetime", "description", "measurement_type", "value", "unit"])
+    meta = pd.DataFrame(filtered_meta_query.all(), columns=["uuid", "description", "start_time"])
 
-    return df
+    return values, meta
 
 
-def plot_time_based_graph(df, measurement_type, title, xlabel, ylabel):
+def plot_surface(values_df, meta_df):
+
+    for uuid in values_df.uuid.unique():
+
+        fig, ax = plt.subplots(subplot_kw={"projection": "3d"})
+
+        start_time = meta_df.loc[(meta_df.uuid == uuid)].start_time.values[0]
+        values = values_df.loc[(values_df.measurement_type == "Batch and Epoch")
+                               & (values_df.uuid == uuid)].value.values.astype(float)
+        if len(values) == 0:
+            break
+
+        epochs = np.arange(1.0, 11.0)
+        batches = np.arange(1.0, 11.0)
+        batches = np.power(2, batches)
+        ax.set_yticks(np.log2(batches))
+        ax.set_yticklabels(batches)
+        ax.set_xticks(epochs)
+        ax.set_xticklabels(epochs)
+        epochs, batches = np.meshgrid(epochs, batches)
+        values = np.reshape(values, (-1, 10))
+
+        surf = ax.plot_surface(epochs, np.log2(batches), values, cmap=cm.coolwarm,
+                               linewidth=0, antialiased=False)
+
+        ax.set_xlabel("Number of epochs")
+        ax.set_ylabel("Batch size")
+        ax.set_zlabel("loss")
+
+        fig.colorbar(surf, shrink=0.5, aspect=5)
+        plt.title("Batch size and epoch influence for run from " + str(start_time))
+        plt.show()
+
+
+def plot_time_based_graph(values_df, meta_df, measurement_type, title, xlabel, ylabel):
 
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
 
-    filtered_df = df.loc[(df.measurement_type == measurement_type)]
+    filtered_df = values_df.loc[(values_df.measurement_type == measurement_type)]
 
     for uuid in filtered_df.uuid.unique():
-        filtered_uuid_df = filtered_df.loc[(df.uuid == uuid)]
+        filtered_uuid_df = filtered_df.loc[(values_df.uuid == uuid)]
+        start_time = meta_df.loc[(meta_df.uuid == uuid)].start_time.values[0]
         lastTimestamp, lastValue = 0, 0
-        for description in df.description.unique():
-            description_df = filtered_uuid_df.loc[df.description == description]
+        for description in values_df.description.unique():
+            description_df = filtered_uuid_df.loc[values_df.description == description]
             if len(description_df) != 0:
                 dates = description_df.datetime.values
                 duration = round((dates[len(dates) - 1] - dates[0]) / np.timedelta64(1, 's'))
@@ -84,7 +131,7 @@ def plot_time_based_graph(df, measurement_type, title, xlabel, ylabel):
 
                 ax.plot(timestamps,
                         values,
-                        label=(uuid + ": " + description))
+                        label=("Run from " + str(start_time)))
 
     ax.set_ylabel(ylabel)
     ax.set_xlabel(xlabel)
@@ -95,22 +142,38 @@ def plot_time_based_graph(df, measurement_type, title, xlabel, ylabel):
     plt.show()
 
 
-def plot_epoch_based_graph(df, measurement_type, title, xlabel, ylabel):
+def plot_graph(values_df, meta_df, measurement_type, title, xlabel, ylabel, based_on):
 
     fig = plt.figure(figsize=(12, 8))
     ax = fig.add_subplot(111)
 
-    tta_df = df.loc[(df.measurement_type == measurement_type)]
+    df = values_df.loc[(values_df.measurement_type == measurement_type)]
 
-    for uuid in tta_df.uuid.unique():
-        tta_uuid_df = tta_df.loc[(df.uuid == uuid)]
-        epochs = []
-        for i in range(len(tta_uuid_df.value.values)):
-            epochs.append(i + 1)
+    for uuid in df.uuid.unique():
+        uuid_df = df.loc[(values_df.uuid == uuid)]
+        start_time = meta_df.loc[(meta_df.uuid == uuid)].start_time.values[0]
+        x_values = []
+        for i in range(len(uuid_df.value.values)):
+            if based_on == "Batches":
+                x_values.append(2 ** (i + 1))
+                ax.set_xscale('log')
+            elif based_on == "Epochs":
+                x_values.append(i + 1)
+            else:
+                x_values.append(10**floor(i/9)*((i % 9)+1)*0.00001)
 
-        ax.plot(epochs,
-                tta_uuid_df.value.values.astype(float),
-                label=uuid)
+        if not based_on == "LR":
+            ax.set_xticks(x_values)
+            ax.set_xticklabels(x_values)
+            ax.plot(x_values,
+                    uuid_df.value.values.astype(float),
+                    label=("Run from " + str(start_time)))
+        else:
+            plt.xticks(rotation=90)
+            ax.plot(['{:.5f}'.format(x) for x in x_values],
+                    uuid_df.value.values.astype(float),
+                    label=("Run from " + str(start_time)))
+
 
     plt.legend(loc=2)
     ax.set_ylabel(ylabel)
@@ -121,13 +184,14 @@ def plot_epoch_based_graph(df, measurement_type, title, xlabel, ylabel):
     plt.show()
 
 
-def plot_barh(df, measurement_type, title, xlabel):
+def plot_barh(values_df, meta_df, measurement_type, title, xlabel):
 
-    filtered_df = df.loc[df.measurement_type == measurement_type]
+    filtered_df = values_df.loc[values_df.measurement_type == measurement_type]
     uuids = filtered_df.uuid.unique()
     descriptions = filtered_df.description.unique()
 
     dic = {"uuids": uuids}
+
     for description in descriptions:
         dic[description] = filtered_df.loc[filtered_df.description == description].value.values.astype(np.float)
 
@@ -150,14 +214,18 @@ def plot_barh(df, measurement_type, title, xlabel):
     plt.show()
 
 
-def plot_confusion_matrix(df):
+def plot_confusion_matrix(values_df, meta_df):
 
-    for uuid in df.uuid.unique():
+    for uuid in values_df.uuid.unique():
 
-        values = df.loc[(df.measurement_type == "Multiclass Confusion Matrix") & (df.uuid == uuid)].value.values
+        start_time = meta_df.loc[(meta_df.uuid == uuid)].start_time.values[0]
+
+        values = values_df.loc[(values_df.measurement_type == "Multiclass Confusion Matrix")
+                               & (values_df.uuid == uuid)].value.values
         if len(values) == 0:
             break
-        classes = df.loc[(df.measurement_type == "Multiclass Confusion Matrix Class") & (df.uuid == uuid)].value.values
+        classes = values_df.loc[(values_df.measurement_type == "Multiclass Confusion Matrix Class")
+                                & (values_df.uuid == uuid)].value.values
 
         con_mat = []
 
@@ -169,42 +237,53 @@ def plot_confusion_matrix(df):
 
         matrix = pd.DataFrame(con_mat, index=classes, columns=classes)
         plt.figure(figsize=(12, 8))
-        plt.title("Confusion Matrix for run " + uuid)
+        plt.title("Confusion Matrix for run at " + str(start_time))
         sn.heatmap(matrix, annot=True)
         plt.show()
 
 
-def plot_memory(df):
-    plot_time_based_graph(df, "Memory", "Memory usage", "Time in seconds", "MB used")
+def plot_memory(values, meta):
+    plot_time_based_graph(values, meta, "Memory", "Memory usage", "Time in seconds", "MB used")
 
 
-def plot_energy(df):
-    plot_time_based_graph(df, "Energy", "Power consumption", "Time in seconds", "mJ of energy usage")
+def plot_energy(values, meta):
+    plot_time_based_graph(values, meta, "Energy", "Power consumption", "Time in seconds", "mJ of energy usage")
 
 
-def plot_TTA(df):
-    plot_epoch_based_graph(df, "TTA", "Time (Epochs) to Accuracy", "Total Epochs in training", "Accuracy")
+def plot_TTA(values, meta):
+    plot_graph(values, meta, "TTA", "Time (Epochs) to Accuracy", "Total Epochs in training", "Accuracy", "Epochs")
 
 
-def plot_loss(df):
-    plot_epoch_based_graph(df, "Loss", "Training loss in each epoch", "Total Epochs in training", "Loss")
+def plot_loss(values, meta):
+    plot_graph(values, meta, "Loss", "Training loss in each epoch", "Total Epochs in training", "Loss", "Epochs")
 
 
-def plot_time(df):
-    plot_barh(df, "Time", "Time spent in phases", "Time in seconds")
+def plot_batch_influence(values, meta):
+    plot_graph(values, meta, "Batch", "Training loss regarding batch size", "Batch size", "Loss", "Batches")
 
 
-def plot_throughput(df):
-    plot_barh(df, "Throughput", "Throughput", "Seconds per entry")
+def plot_lr_influence(values, meta):
+    plot_graph(values, meta, "Learning Rate", "Learning rate influence on loss", "Learning Rate", "Loss", "LR")
 
 
-def plot_latency(df):
-    plot_barh(df, "Latency", "Latency", "Entries per second")
+def plot_time(values, meta):
+    plot_barh(values, meta, "Time", "Time spent in phases", "Time in seconds")
+
+
+def plot_throughput(values, meta):
+    plot_barh(values, meta, "Throughput", "Throughput", "Seconds per entry")
+
+
+def plot_latency(values, meta):
+    plot_barh(values, meta, "Latency", "Latency", "Entries per second")
 
 
 metrics_dict = {"Time": plot_time,
                 "TTA": plot_TTA,
                 "Loss": plot_loss,
+                "Batch": plot_batch_influence,
+                "Batch and Epoch": plot_surface,
+                "Learning Rate": plot_lr_influence,
                 "Memory": plot_memory,
                 "Energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
@@ -213,5 +292,5 @@ metrics_dict = {"Time": plot_time,
 
 
 if __name__ == "__main__":
-    #visualize(["892bb777-6013-4592-a630-2e95cc21f469"], "so2sat_benchmark.db")
-    visualize(["0ed1262c-fd64-413c-9cc1-f7d1a537616b"], "MNIST_benchmark.db")
+    visualize(["8f09f9de-71fb-40f3-abe9-81fb18634ed5"], "stock_market_benchmark.db")
+
