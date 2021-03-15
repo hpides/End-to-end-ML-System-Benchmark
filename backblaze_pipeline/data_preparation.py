@@ -31,7 +31,8 @@ h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
 @pkg.MeasureTime(bm, description="parsing of raw csv files into hashed hdf5")
 @pkg.MeasureThroughput(bm, description="parsing of raw csv files into hashed hdf5")
-@pkg.MeasureMemoryPsutil(bm, description="parsing of raw csv files into hashed hdf5")
+@pkg.MeasureMemoryPsutil(bm, description="parsing of raw csv files into hashed hdf5", interval=0.5)
+@pkg.MeasureMemorySamples(bm, description="parsing of raw csv files into hashed hdf5", interval=0.5)
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:

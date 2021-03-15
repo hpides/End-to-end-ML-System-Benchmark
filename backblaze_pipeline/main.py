@@ -8,9 +8,11 @@ sys.path.insert(0, os.getcwd())
 
 
 def main():
-    prepare_data()
-    train_and_test()
-    bm.close()
+    try:
+        prepare_data()
+        train_and_test()
+    finally:
+        bm.close()
 
 
 if __name__ == "__main__":

@@ -89,7 +89,6 @@ class MeasureMemorySamples(Measure):
         return measurement_value
 
 
-# cant run in parallel to other thread using decorator for now (e.g. memory sampling)
 class MeasureEnergy(Measure):
     measurement_type = "Energy"
 
@@ -100,31 +99,24 @@ class MeasureEnergy(Measure):
 
     def __call__(self, func):
         def inner(*args, **kwargs):
-            measure = False
+            pyRAPL.setup()
+            self.meter = pyRAPL.Measurement('bar')
             with ThreadPoolExecutor() as tpe:
                 try:
-                    func_thread = tpe.submit(func, *args, **kwargs)
-                    pyRAPL.setup()
-                    meter = pyRAPL.Measurement('bar')
-                    meter.begin()
-                    while not func_thread.done() and self.keep_measuring:
-                        meter.end()
-                        self.log_energy(meter, measure)
-                        measure = True
-                    result = func_thread.result()
+                    tpe.submit(self.log_energy)
+                    result = func(*args, **kwargs)
                 finally:
                     self.keep_measuring = False
+                    self.meter.end()
                 return result
-
         return inner
 
-    def log_energy(self, meter, measure):
-        measurement_value = meter.result.pkg[0]
-        if measure:
+    def log_energy(self):
+        while self.keep_measuring:
+            measurement_value = self.meter.result.pkg[0]
             self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
-            meter.begin()
-        time.sleep(self.interval)
-        return measurement_value
+            self.meter.begin()
+            time.sleep(self.interval)
    
 
 class MeasureMemoryTracemalloc(Measure):
@@ -172,25 +164,18 @@ class MeasureMemoryPsutil(Measure):
             self.process = psutil.Process(self.pid)
             with ThreadPoolExecutor() as tpe:
                 try:
-                    if not tracemalloc.is_tracing():
-                        tracemalloc.start()
-                    func_thread = tpe.submit(func, *args, **kwargs)
-                    while not func_thread.done() and self.keep_measuring:
-                        self.log_memory()
-                    result = func_thread.result()
+                    tpe.submit(self.log_memory)
+                    result = func(*args, **kwargs)
                 finally:
                     self.keep_measuring = False
-                    if tracemalloc.is_tracing():
-                        tracemalloc.stop()
                 return result
         return inner
 
     def log_memory(self):
-        # measurement_value = tracemalloc.get_traced_memory()[0] / (2**20)
-        measurement_value = self.process.memory_info()[0] / (2**20)
-        # print(measurement_value)
-        self.benchmark.log(self.description, self.measurement_type, measurement_value, "MiB")
-        # time.sleep(self.interval)
+        while self.keep_measuring:
+            measurement_value = self.process.memory_info()[0] / (2**20)
+            self.benchmark.log(self.description, self.measurement_type, measurement_value, "MiB")
+            time.sleep(self.interval)
 
 
 class MeasureConfusion(Measure):
