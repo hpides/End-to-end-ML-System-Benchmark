@@ -1,0 +1,7 @@
+-e ../../e2ebench
+keras
+matplotlib
+numpy
+pandas
+sklearn
+tensorflow

@@ -5,6 +5,7 @@ from concurrent.futures import ThreadPoolExecutor
 import psutil
 import os
 import pyRAPL
+from math import floor
 
 
 class Measure(object):
@@ -39,7 +40,7 @@ class MeasureTimeToAccuracyMult(Measure):
         def inner(*args, **kwargs):
             finalResult = None
             for i in range(1,11):                                       # no. of epochs should be choosable by the user
-                result = func(i, **kwargs)
+                result = func(*args, epochs=i, **kwargs)
                 accuracy = result["accuracy"]
                 self.benchmark.log(self.description, self.measurement_type, accuracy)
                 finalResult = result
@@ -58,7 +59,109 @@ class MeasureTimeToAccuracy(Measure):
             for i in range(len(accuracy)):
                 self.benchmark.log(self.description, self.measurement_type, accuracy[i])
             return result
-        return inner    
+        return inner
+
+
+# class MeasureMetricsPerEpoch(Measure):
+#    measurement_type = "Metrics per Epoch"
+#
+#    def __call__(self, func):
+#        def inner(*args, **kwargs):
+#            result = func(*args, **kwargs)
+#            metrics = result["metrics"]
+#            for metric in metrics:
+#                for value in metrics[metric]:
+#                    self.benchmark.log(self.description, self.measurement_type + metric, value)
+#            return result
+#        return inner
+
+
+class MeasureBatchSizeInfluence(Measure):
+    measurement_type = "Batch"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for i in range(1, 11):                                       # batch range should be choosable by the user
+                result = func(*args, batch_size=2**i, **kwargs)
+                loss = result["loss"][-1]
+                self.benchmark.log(self.description, self.measurement_type, loss)
+                finalResult = result
+            return finalResult
+        return inner
+
+
+class MeasureBatchAndEpochInfluenceMult(Measure):
+    measurement_type = "Batch and Epoch"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for i in range(1, 11):                                       # batch range should be choosable by the user
+                for j in range(1, 11):                                   # no. of epochs should be choosable by the user
+                    result = func(*args, epochs=i, batch_size=2 ** j, **kwargs)
+                    loss = result["loss"][-1]
+                    self.benchmark.log(self.description, self.measurement_type, loss)
+                    finalResult = result
+            return finalResult
+        return inner
+
+
+class MeasureBatchAndEpochInfluence(Measure):
+    measurement_type = "Batch and Epoch"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for j in range(1, 11):                                   # batch range should be choosable by the user
+                result = func(*args, epochs=10, batch_size=2 ** j, **kwargs)    # no. of epochs should be choosable by the user
+                loss = result["loss"]
+                for i in range(len(loss)):
+                    self.benchmark.log(self.description, self.measurement_type, loss[i])
+                finalResult = result
+            return finalResult
+        return inner
+
+
+class MeasureLoss(Measure):
+    measurement_type = "Loss"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            loss = result["loss"]
+            for i in range(len(loss)):
+                self.benchmark.log(self.description, self.measurement_type, loss[i])
+            return result
+        return inner
+
+
+class MeasureLossMult(Measure):
+    measurement_type = "TTA"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            finalResult = None
+            for i in range(1,11):                                       # no. of epochs should be choosable by the user
+                result = func(i, **kwargs)
+                loss = result["loss"]
+                self.benchmark.log(self.description, self.measurement_type, loss)
+                finalResult = result
+            return finalResult
+        return inner
+
+
+class MeasureLearningRate(Measure):
+    measurement_type = "Learning Rate"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            for i in range(0, 45):
+                result = func(*args, lr=(10**floor(i/9)*((i % 9)+1)*0.00001), **kwargs)
+                loss = result["loss"][-1]
+                self.benchmark.log(self.description, self.measurement_type, loss)
+            return result
+        return inner
     
 
 class MeasureMemorySamples(Measure):
@@ -225,6 +328,7 @@ class MeasureConfusion(Measure):
         return inner
 
 
+# For Sklearn
 class MeasureMulticlassConfusion(Measure):
     measurement_type = "Multiclass Confusion Matrix"
 
@@ -235,6 +339,25 @@ class MeasureMulticlassConfusion(Measure):
                 self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
                 for j in range((len(result["confusion matrix"]))):
                     self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j]))
+
+            result["confusion matrix"] = str(result["confusion matrix"])
+            result["classes"] = str(result["classes"])
+            return result
+
+        return inner
+
+
+# For Tensorflow
+class MeasureMulticlassConfusionTF(Measure):
+    measurement_type = "Multiclass Confusion Matrix"
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            result = func(*args, **kwargs)
+            for i in range(len(result["confusion matrix"])):
+                self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
+                for j in range((len(result["confusion matrix"]))):
+                    self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j].numpy()))
 
             result["confusion matrix"] = str(result["confusion matrix"])
             result["classes"] = str(result["classes"])
