@@ -16,11 +16,12 @@ class Benchmark:
         self.description = description
         self.queue = Queue()
 
-        t = Thread(target=self.__database_thread_func)
-        t.start()
+        self.__db_thread = Thread(target=self.__database_thread_func)
+        self.__db_thread.start()
 
     def close(self):
         self.close_event.set()
+        self.__db_thread.join()
 
     def __database_thread_func(self):
         engine = create_engine('sqlite+pysqlite:///' + self.db_file)
