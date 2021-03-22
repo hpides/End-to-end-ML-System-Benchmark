@@ -1,5 +1,8 @@
-from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker
+from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker, HyperparameterTracker
+from e2ebench.metrics.supervisor import BenchmarkSupervisor, TimeMetric, MemoryMetric
 
-type_mapper = {
-    "confusion-matrix" : ConfusionMatrixTracker
+
+measurement_type_mapper = {
+    "confusion-matrix" : ConfusionMatrixTracker,
+    "hyperparameters" : HyperparameterTracker
 }

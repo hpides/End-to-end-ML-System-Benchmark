@@ -9,8 +9,6 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-# import package as pkg
-# from benchmarking import bm
 import e2ebench
 
 sys.path.insert(0, os.getcwd())
@@ -30,9 +28,6 @@ pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
 
-# @pkg.MeasureTime(bm, description="parsing of raw csv files into hashed hdf5")
-# @pkg.MeasureThroughput(bm, description="parsing of raw csv files into hashed hdf5")
-# @pkg.MeasureMemoryPsutil(bm, description="parsing of raw csv files into hashed hdf5")
 @e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(), e2ebench.MemoryMetric()], description="test")
 def parse_raw_csv_files():
     hash_bucket_count = 20
@@ -60,9 +55,7 @@ def add_days_to_failure_col_to_group(group):
         group_copy['days_to_failure'] = -1
     return group_copy
 
-#
-# @pkg.MeasureTime(bm, description="converting pandas to h5py")
-# @pkg.MeasureMemoryPsutil(bm, interval=1, description="converting pandas to h5py")
+@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(), e2ebench.MemoryMetric()], description="test")
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)
@@ -84,9 +77,6 @@ def transfer_from_pandas_to_h5py():
             process_bar.set_description(
                 f"Transferring dataset {process_bar.n}/{process_bar.total} to h5py : {dataset_name}")
 
-
-# @pkg.MeasureThroughput(bm, description="normalization and categorization")
-# @pkg.MeasureMemoryPsutil(bm, description="normalization and categorization")
 def normalization_and_categorization():
     X_h5 = h5py_hdf['X']
     y_h5 = h5py_hdf['y']
@@ -118,7 +108,6 @@ def normalization_and_categorization():
     return {'num_entries': len(X)}
 
 
-# @pkg.MeasureMemoryPsutil(bm, description="split and resample dataset", interval=0.2)
 def dataset_splitting_and_resampling():
     X = h5py_hdf['X'][:, :]
     y = h5py_hdf['y'][:]

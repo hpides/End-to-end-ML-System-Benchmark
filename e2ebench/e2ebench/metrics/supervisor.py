@@ -99,3 +99,33 @@ class MemoryMetric(Metric):
     def data(self):
         return self.measurements
 
+"""
+class MeasureEnergy(Measure):
+    measurement_type = "Energy"
+
+    def __init__(self, benchmark, description, interval=1.0):
+        super().__init__(benchmark, description)
+        self.interval = interval
+        self.keep_measuring = True
+
+    def __call__(self, func):
+        def inner(*args, **kwargs):
+            pyRAPL.setup()
+            self.meter = pyRAPL.Measurement('bar')
+            with ThreadPoolExecutor() as tpe:
+                try:
+                    tpe.submit(self.log_energy)
+                    result = func(*args, **kwargs)
+                finally:
+                    self.keep_measuring = False
+                    self.meter.end()
+                return result
+        return inner
+
+    def log_energy(self):
+        while self.keep_measuring:
+            measurement_value = self.meter.result.pkg[0]
+            self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
+            self.meter.begin()
+            time.sleep(self.interval)
+"""
