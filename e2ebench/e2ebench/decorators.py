@@ -2,11 +2,11 @@ import time
 import resource
 import tracemalloc
 from concurrent.futures import ThreadPoolExecutor
+import pickle
 import psutil
 import os
 import pyRAPL
 from math import floor
-
 
 class Measure(object):
     name = None
@@ -329,23 +329,49 @@ class MeasureConfusion(Measure):
 
 
 # For Sklearn
-class MeasureMulticlassConfusion(Measure):
+class MeasureMulticlassConfusion:
     measurement_type = "Multiclass Confusion Matrix"
 
+    def __init__(self, benchmark, description):
+        self.benchmark = benchmark
+        self.description = description
+
+    @classmethod
+    def from_serialized(cls, pickle_bytes):
+        obj = cls.__new__(cls)
+        obj.conf_mat = cls.deserialize(pickle_bytes)
+
+        return obj
+
+    @staticmethod
+    def serialize(conf_mat, labels):
+        return pickle.dumps({'conf_mat': conf_mat, 'labels': labels})
+
+    @staticmethod
+    def foomethod(r):
+        return r ** 2
+
+    def deserialize(pickle_bytes):
+        return pickle.loads(pickle_bytes)
+    
     def __call__(self, func):
         def inner(*args, **kwargs):
-            result = func(*args, **kwargs)
-            for i in range(len(result["confusion matrix"])):
-                self.benchmark.log(self.description, "Multiclass Confusion Matrix Class", result["classes"][i])
-                for j in range((len(result["confusion matrix"]))):
-                    self.benchmark.log(self.description, self.measurement_type, str(result["confusion matrix"][i][j]))
-
-            result["confusion matrix"] = str(result["confusion matrix"])
-            result["classes"] = str(result["classes"])
-            return result
-
+            y_true, y_pred, labels = func(*args, **kwargs)
+            self.conf_mat = sklearn.metrics.confusion_matrix(y_true, y_pred, labels=labels)
+            self.labels = labels
         return inner
 
+    
+
+        
+
+    def serialize(self):
+        return pickle.dumps({'matrix': self.conf_mat, 'labels': self.labels})
+
+    def visualize(self):
+        pass
+
+    
 
 # For Tensorflow
 class MeasureMulticlassConfusionTF(Measure):
