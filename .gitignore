@@ -3,7 +3,8 @@ __pycache__
 *benchmark.db
 env
 e2ebench.egg-info
-
+ENV
+*.db
 .idea
 .ipynb_checkpoints
 .vscode

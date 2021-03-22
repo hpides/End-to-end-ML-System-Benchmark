@@ -290,7 +290,3 @@ metrics_dict = {"Time": plot_time,
                 "Latency": plot_latency,
                 "Throughput": plot_throughput}
 
-
-if __name__ == "__main__":
-    visualize(["8f09f9de-71fb-40f3-abe9-81fb18634ed5"], "stock_market_benchmark.db")
-

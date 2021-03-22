@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, DateTime, ForeignKey
+from sqlalchemy import Column, Integer, String, DateTime, ForeignKey, LargeBinary
 from sqlalchemy.ext.declarative import declarative_base
 
 Base = declarative_base()
@@ -12,7 +12,7 @@ class Measurement(Base):
     datetime = Column(DateTime)
     description = Column(String, nullable=False)
     measurement_type = Column(String)
-    value = Column(String, nullable=False)
+    value = Column(LargeBinary, nullable=False)
     unit = Column(String)
 
 

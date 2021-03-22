@@ -4,3 +4,4 @@ imblearn
 numpy
 sklearn
 tqdm
+tables
