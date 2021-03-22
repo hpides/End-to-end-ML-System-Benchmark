@@ -3,7 +3,7 @@ import sys
 import h5py
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
-from e2ebench import e2ebench
+import e2ebench
 # from benchmarking import bm
 
 # @e2ebench.MeasureThroughput(bm, description="Training throughput")

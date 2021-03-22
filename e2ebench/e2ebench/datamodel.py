@@ -12,7 +12,8 @@ class Measurement(Base):
     datetime = Column(DateTime)
     description = Column(String, nullable=False)
     measurement_type = Column(String)
-    value = Column(LarbeBinary, nullable=False)
+    value = Column(LargeBinary, nullable=False)
+    unit = Column(String)
 
 
 class BenchmarkMetadata(Base):
