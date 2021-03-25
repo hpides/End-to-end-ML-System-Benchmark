@@ -13,6 +13,10 @@ setup(
         'psutil',
         'pyRAPL',
         'seaborn',
+        'scikit-learn',
         'sqlalchemy'
-    ]
+    ],
+    entry_points = {
+        'console_scripts': ['e2ebench-cli=e2ebench.visualization_cli:main'],
+    }
 )

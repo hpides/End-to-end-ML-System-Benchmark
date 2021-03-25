@@ -1,10 +1,11 @@
 import argparse
-from datamodel import Measurement
+import os
+
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
-import os
-import visualization
-import metrics
+
+from e2ebench.datamodel import Measurement
+from e2ebench import metrics
 
 parser = argparse.ArgumentParser(description="Visualization CLI for End to End ML System Benchmark")
 
@@ -33,7 +34,7 @@ def main():
         raise Exception("Given combination of uuid, type and description is not unique")
 
     query_result = query_results.pop()
-    Measurement_Class = metrics.type_mapper[query_result.measurement_type]
+    Measurement_Class = metrics.measurement_type_mapper[query_result.measurement_type]
     measurement = Measurement_Class._from_serialized(query_result.value)
     measurement.visualize()
 
