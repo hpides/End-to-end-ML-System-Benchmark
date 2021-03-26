@@ -34,8 +34,8 @@ def main():
         raise Exception("Given combination of uuid, type and description is not unique")
 
     query_result = query_results.pop()
-    Measurement_Class = metrics.measurement_type_mapper[query_result.measurement_type]
-    measurement = Measurement_Class._from_serialized(query_result.value)
+    Visualizer_Class = metrics.measurement_type_mapper[query_result.measurement_type]
+    measurement = Visualizer_Class(query_result.value)
     measurement.visualize()
 
 if __name__ == "__main__":

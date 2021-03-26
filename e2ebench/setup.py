@@ -10,6 +10,7 @@ setup(
         'matplotlib',
         'numpy',
         'pandas',
+        'plotly',
         'psutil',
         'pyRAPL',
         'seaborn',
