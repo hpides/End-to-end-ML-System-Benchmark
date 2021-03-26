@@ -31,11 +31,14 @@ class ConfusionMatrixVisualizer:
                                           x=self.labels,
                                           y=self.labels,
                                           annotation_text=matrix_str,
-                                          colorscale=px.colors.diverging.Tealrose)
+                                          colorscale=px.colors.diverging.Tealrose
+                                          )
 
+        layout = {
+            "xaxis" : {"title" : "Predicted Value"},
+            "yaxis" : {"title" : "Real Value"},
+        }
         
-
-
         fig.show()
 
 class HyperparameterTracker:
@@ -53,7 +56,7 @@ class HyperparameterTracker:
     def __enter__(self):
         return self
 
-    def __exit__(self):
+    def __exit__(self, exc_type, exc_value, exc_traceback):
         self.close()
 
     def track(self, measurement):
