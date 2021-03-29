@@ -8,7 +8,7 @@ import e2ebench
 
 from benchmarking import bm
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric()], description="test")
+@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric('training time')], bm)
 def train():
     with h5py.File('data/h5py.h5', 'r') as hdf:
         X_train = hdf['X_train'][:,:]

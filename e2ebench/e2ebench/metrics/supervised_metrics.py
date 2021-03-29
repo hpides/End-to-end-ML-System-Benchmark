@@ -1,15 +1,16 @@
+from concurrent.futures import ThreadPoolExecutor
+from datetime import datetime
+import os
+import pickle
+import psutil
 import threading
 import time
-from concurrent.futures import ThreadPoolExecutor
-import os
-import psutil
-from datetime import datetime
 
 
 class BenchmarkSupervisor:
-    def __init__(self, metrics, description):
+    def __init__(self, metrics, benchmark):
         self.metrics = sorted(metrics)
-        self.description = description
+        self.benchmark = benchmark
 
     def __call__(self, func):
         def inner(*args, **kwargs):
@@ -22,7 +23,7 @@ class BenchmarkSupervisor:
                     finish_event.set()
                     self.__after()
                     for thread in threads:
-                        thread.result(timeout=None)
+                        thread.result()
                     self.__log()
                 finally:
                     finish_event.set()
@@ -47,11 +48,14 @@ class BenchmarkSupervisor:
 
     def __log(self):
         for metric in self.metrics:
-            print(metric.data())
+            metric.log(self.benchmark)
 
 
 class Metric:
     priority = 0
+
+    def __init__(self, description):
+        self.description = description
 
     def __lt__(self, other):
         return self.priority < other.priority
@@ -65,39 +69,53 @@ class Metric:
     def meanwhile(self, finish_event):
         pass
 
+    def log(self, benchmark):
+        pass
+
 
 class TimeMetric(Metric):
     priority = 0
-
-    def __init__(self):
-        self.before_time = None
-        self.after_time = None
+    measure_type = 'time'
 
     def before(self):
         self.before_time = time.perf_counter()
 
     def after(self):
-        self.after_time = time.perf_counter()
+        after_time = time.perf_counter()
+        self.data = after_time - self.before_time
 
-    def data(self):
-        return self.after_time-self.before_time
+    def serialize(self):
+        return pickle.dumps(self.data)
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='s')
 
 
 class MemoryMetric(Metric):
     priority = 1
+    measure_type = 'memory'
 
-    def __init__(self, interval=1):
-        self.interval = interval
+    def before(self):
+        self.timestamps = []
         self.measurements = []
 
     def meanwhile(self, finish_event):
         process = psutil.Process(os.getpid())
         while not finish_event.isSet():
-            measurement_value = process.memory_info()[0] / (2 ** 20)
-            self.measurements.append((datetime.now(), measurement_value))
+            self.timestamps.append(datetime.now())
+            self.measurements.append(process.memory_info()[0] / (2 ** 20))
 
-    def data(self):
-        return self.measurements
+    def after(self):
+        self.data = {
+            'timestamps' : self.timestamps,
+            'measurements' : self.measurements
+        }
+
+    def serialize(self):
+        return pickle.dumps(self.data)
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize())
 
 """
 class MeasureEnergy(Measure):
