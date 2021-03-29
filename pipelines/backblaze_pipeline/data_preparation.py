@@ -2,6 +2,8 @@ from collections import Counter
 import os
 import re
 import sys
+
+import e2ebench
 import h5py
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
@@ -9,7 +11,8 @@ import numpy as np
 import pandas as pd
 from sklearn.model_selection import train_test_split
 from tqdm import tqdm
-import e2ebench
+
+from benchmarking import bm
 
 sys.path.insert(0, os.getcwd())
 raw_data_path = "data/raw"
@@ -28,7 +31,7 @@ pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(), e2ebench.MemoryMetric()], description="test")
+@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(description='raw parsing time'), e2ebench.MemoryMetric('raw parsing memory')], bm)
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:
@@ -55,7 +58,7 @@ def add_days_to_failure_col_to_group(group):
         group_copy['days_to_failure'] = -1
     return group_copy
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(), e2ebench.MemoryMetric()], description="test")
+@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric('transferring time'), e2ebench.MemoryMetric('transferring memory')], bm)
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)
