@@ -96,7 +96,7 @@ class TimeMetric(Metric):
 
 
 class MemoryMetric(Metric):
-    priority = 1
+    priority = 3
     measure_type = 'memory'
     needs_threading = True
 
@@ -124,9 +124,26 @@ class MemoryMetric(Metric):
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize())
 
+class EnergyMetric(Metric):
+    priority = 1
+    measure_type = 'energy'
+    needs_threading = False
+
+    def before(self):
+        pyRAPL.setup()
+        self.meter = pyRAPL.Measurement('bar')
+        self.meter.begin()
+
+    def after(self):
+        self.meter.end()
+        self.data = sum(self.meter.result.pkg)
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
+
 
 class PowerMetric(Metric):
-    priority = 1
+    priority = 3
     measure_type = 'power'
     needs_threading = True
 

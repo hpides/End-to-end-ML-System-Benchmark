@@ -1,5 +1,5 @@
 from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker, HyperparameterTracker, ConfusionMatrixVisualizer, HyperparameterVisualizer
-from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor, TimeMetric, MemoryMetric, PowerMetric
+from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor, TimeMetric, MemoryMetric, PowerMetric, EnergyMetric
 
 
 measurement_type_mapper = {

@@ -1,14 +1,14 @@
 import numpy as np
 
-from e2ebench import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, MemoryMetric, PowerMetric
+from e2ebench import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, MemoryMetric, PowerMetric, EnergyMetric
 
 bm = Benchmark('sample_db_file.db')
 
 
-@BenchmarkSupervisor([TimeMetric('bloat time'), MemoryMetric('bloat memory', interval=0.1), PowerMetric('bloat power')], bm)
+@BenchmarkSupervisor([TimeMetric('bloat time'), MemoryMetric('bloat memory', interval=0.1), PowerMetric('bloat power'), EnergyMetric('bloat energy')], bm)
 def bloat():
     a = []
-    for i in range(1, 10):
+    for i in range(1, 2):
         a.append(np.random.randn(*([10] * i)))
     print(a)
 
