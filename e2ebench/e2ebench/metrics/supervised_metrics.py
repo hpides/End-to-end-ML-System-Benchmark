@@ -5,6 +5,7 @@ import pickle
 import psutil
 import threading
 import time
+import pyRAPL
 
 
 class BenchmarkSupervisor:
@@ -15,15 +16,15 @@ class BenchmarkSupervisor:
     def __call__(self, func):
         def inner(*args, **kwargs):
             finish_event = threading.Event()
-            with ThreadPoolExecutor() as tpe:
+            with ThreadPoolExecutor(max_workers=len(self.metrics)) as tpe:
                 try:
                     self.__before()
                     threads = self.__meanwhile(tpe, finish_event)
                     function_result = func(*args, **kwargs)
                     finish_event.set()
-                    self.__after()
                     for thread in threads:
                         thread.result()
+                    self.__after()
                     self.__log()
                 finally:
                     finish_event.set()
@@ -43,7 +44,8 @@ class BenchmarkSupervisor:
     def __meanwhile(self, tpe, finish_event):
         threads = []
         for metric in self.metrics:
-            threads.append(tpe.submit(metric.meanwhile, finish_event))
+            if metric.needs_threading:
+                threads.append(tpe.submit(metric.meanwhile, finish_event))
         return threads
 
     def __log(self):
@@ -53,6 +55,7 @@ class BenchmarkSupervisor:
 
 class Metric:
     priority = 0
+    needs_threading = False
 
     def __init__(self, description):
         self.description = description
@@ -69,6 +72,9 @@ class Metric:
     def meanwhile(self, finish_event):
         pass
 
+    def serialize(self):
+        return pickle.dumps(self.data)
+
     def log(self, benchmark):
         pass
 
@@ -76,6 +82,7 @@ class Metric:
 class TimeMetric(Metric):
     priority = 0
     measure_type = 'time'
+    needs_threading = False
 
     def before(self):
         self.before_time = time.perf_counter()
@@ -84,9 +91,6 @@ class TimeMetric(Metric):
         after_time = time.perf_counter()
         self.data = after_time - self.before_time
 
-    def serialize(self):
-        return pickle.dumps(self.data)
-
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='s')
 
@@ -94,6 +98,11 @@ class TimeMetric(Metric):
 class MemoryMetric(Metric):
     priority = 1
     measure_type = 'memory'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
+        self.interval = interval
 
     def before(self):
         self.timestamps = []
@@ -104,6 +113,7 @@ class MemoryMetric(Metric):
         while not finish_event.isSet():
             self.timestamps.append(datetime.now())
             self.measurements.append(process.memory_info()[0] / (2 ** 20))
+            time.sleep(self.interval)
 
     def after(self):
         self.data = {
@@ -111,39 +121,32 @@ class MemoryMetric(Metric):
             'measurements' : self.measurements
         }
 
-    def serialize(self):
-        return pickle.dumps(self.data)
-
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize())
 
-"""
-class MeasureEnergy(Measure):
-    measurement_type = "Energy"
 
-    def __init__(self, benchmark, description, interval=1.0):
-        super().__init__(benchmark, description)
+class PowerMetric(Metric):
+    priority = 1
+    measure_type = 'power'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
         self.interval = interval
-        self.keep_measuring = True
+        self.meter = None
 
-    def __call__(self, func):
-        def inner(*args, **kwargs):
-            pyRAPL.setup()
-            self.meter = pyRAPL.Measurement('bar')
-            with ThreadPoolExecutor() as tpe:
-                try:
-                    tpe.submit(self.log_energy)
-                    result = func(*args, **kwargs)
-                finally:
-                    self.keep_measuring = False
-                    self.meter.end()
-                return result
-        return inner
+    def before(self):
+        pyRAPL.setup()
+        self.meter = pyRAPL.Measurement('bar')
+        self.data = []
 
-    def log_energy(self):
-        while self.keep_measuring:
-            measurement_value = self.meter.result.pkg[0]
-            self.benchmark.log(self.description, self.measurement_type, measurement_value/1000, "mJ")
+    def meanwhile(self, finish_event):
+        while not finish_event.isSet():
             self.meter.begin()
             time.sleep(self.interval)
-"""
+            self.meter.end()
+            power = sum(map(lambda x: x / self.meter.result.duration, self.meter.result.pkg))
+            self.data.append(power)
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize())
