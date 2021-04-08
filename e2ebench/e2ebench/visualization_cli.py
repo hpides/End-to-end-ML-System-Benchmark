@@ -36,7 +36,7 @@ def main():
     query_result = query_results.pop()
     Visualizer_Class = metrics.measurement_type_mapper[query_result.measurement_type]
     measurement = Visualizer_Class(query_result.value)
-    measurement.visualize()
+    measurement.visualize(args.uuid, args.desc)
 
 if __name__ == "__main__":
     main()
