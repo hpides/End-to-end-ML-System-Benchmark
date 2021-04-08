@@ -15,7 +15,8 @@ setup(
         'pyRAPL',
         'seaborn',
         'scikit-learn',
-        'sqlalchemy'
+        'sqlalchemy',
+        'PyInquirer'
     ],
     entry_points = {
         'console_scripts': ['e2ebench-cli=e2ebench.visualization_cli:main'],
