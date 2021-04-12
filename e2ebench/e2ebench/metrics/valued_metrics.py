@@ -109,7 +109,6 @@ class TTATracker:
         self.benchmark = benchmark
 
     def track(self, accuracies, description):
-        print(accuracies)
         serialized = self.serialize(accuracies)
         self.benchmark.log(description, self.MEASURE_TYPE, serialized)
 
