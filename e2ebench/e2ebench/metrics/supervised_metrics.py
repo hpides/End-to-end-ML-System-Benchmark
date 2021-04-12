@@ -283,3 +283,97 @@ class PowerVisualizer:
 
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         plt.show()
+
+
+class LatencyMetric(Metric):
+    priority = 0
+    measure_type = 'latency'
+    needs_threading = False
+
+    def before(self):
+        self.before_time = time.perf_counter()
+
+    def after(self):
+        after_time = time.perf_counter()
+        self.data = self.num_entries / (after_time - self.before_time)
+
+    def track(self, num_entries):
+        self.num_entries = num_entries
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='entries/second')
+
+
+class LatencyVisualizer:
+    def __init__(self, serialized_bytes):
+        self.data = pickle.loads(serialized_bytes)
+
+    def visualize(self, uuid, description):
+
+        dic = {"uuid": [uuid]}
+        dic[description] = self.data
+
+        df = pd.DataFrame(
+            dic,
+            index=[uuid]
+        )
+
+        ax = df.plot.barh(stacked=False)
+        plt.title("Latency")
+        plt.xlabel("Entries per second")
+
+        x_offset = 0
+        y_offset = 0.02
+        for p in ax.patches:
+            b = p.get_bbox()
+            val = "{:.2f}".format(b.x1 - b.x0)
+            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
+
+        plt.show()
+
+
+class ThroughputMetric(Metric):
+    priority = 0
+    measure_type = 'throughput'
+    needs_threading = False
+
+    def before(self):
+        self.before_time = time.perf_counter()
+
+    def after(self):
+        after_time = time.perf_counter()
+        self.data = (after_time - self.before_time) / self.num_entries
+
+    def track(self, num_entries):
+        self.num_entries = num_entries
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='seconds/entry')
+
+
+class ThroughputVisualizer:
+    def __init__(self, serialized_bytes):
+        self.data = pickle.loads(serialized_bytes)
+
+    def visualize(self, uuid, description):
+
+        dic = {"uuid": [uuid]}
+        dic[description] = self.data
+
+        df = pd.DataFrame(
+            dic,
+            index=[uuid]
+        )
+
+        ax = df.plot.barh(stacked=False)
+        plt.title("Throughput")
+        plt.xlabel("Seconds per entry")
+
+        x_offset = 0
+        y_offset = 0.02
+        for p in ax.patches:
+            b = p.get_bbox()
+            val = "{:.2f}".format(b.x1 - b.x0)
+            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
+
+        plt.show()
