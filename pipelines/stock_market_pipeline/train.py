@@ -4,22 +4,28 @@ import os
 import sys
 import e2ebench
 
+from e2ebench import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, \
+    MemoryMetric, PowerMetric, EnergyMetric, LatencyMetric, ThroughputMetric, TTATracker
 
-@e2ebench.MeasureLearningRate(bm, description="Learning Rate")
-#@e2ebench.MeasureBatchAndEpochInfluence(bm, description="Batch Size and Epoch Influence")
-#@e2ebench.MeasureBatchSizeInfluence(bm, description="Batch Size Influence")
-#@e2ebench.MeasureThroughput(bm, description="Training throughput")
-#@e2ebench.MeasureLatency(bm, description="Training latency")
-#@e2ebench.MeasureLoss(bm, description="Training loss")
-#@e2ebench.MeasureTimeToAccuracy(bm, description="Time to Accuracy")
-#@e2ebench.MeasureTime(bm, description="Training Time")
-#@e2ebench.MeasureEnergy(bm, description="Training Energy usage")
+bm = Benchmark('stock_market.db')
+
+
+lat = LatencyMetric('stock market latency')
+thr = ThroughputMetric('stock market throughput')
+tta = TTATracker(bm)
+
+@BenchmarkSupervisor([TimeMetric('stock market time'), MemoryMetric('stock market memory', interval=0.1),
+                      PowerMetric('stock market power'), EnergyMetric('stock market energy'),
+                      lat, thr], bm)
 def train(model, X_train, y_train, batch_size=32, epochs=10, lr=0.01):
 
     optimizer = Adam(learning_rate=lr)
-    model.compile(optimizer = optimizer, loss = 'mean_squared_error', metrics=["accuracy", "mse"])
+    model.compile(optimizer=optimizer, loss='mean_squared_error', metrics=["accuracy", "mse"])
 
-    history = model.fit(X_train, y_train, epochs = epochs, batch_size = batch_size)
+    history = model.fit(X_train, y_train, epochs=epochs, batch_size=batch_size)
 
-    return {"model": model, "num_entries": len(X_train),
-            "accuracy": history.history["accuracy"], "loss": history.history["loss"]}
+    lat.track(num_entries=len(X_train))
+    thr.track(num_entries=len(X_train))
+    tta.track(accuracies=history.history["accuracy"],  description="stock market TTA")
+
+    return model
