@@ -3,6 +3,8 @@ import pickle
 import pandas as pd
 import plotly.express as px
 import plotly.figure_factory as ff
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 from sklearn.metrics import ConfusionMatrixDisplay
 
 
@@ -19,13 +21,14 @@ class ConfusionMatrixTracker:
     def serialize(self, matrix, labels):
         return pickle.dumps({'matrix': matrix, 'labels': labels})
 
+
 class ConfusionMatrixVisualizer:
     def __init__(self, serialized_bytes):
         deserialized = pickle.loads(serialized_bytes)
         self.matrix = deserialized['matrix']
         self.labels = deserialized['labels']
 
-    def visualize(self):
+    def visualize(self, uuid, description):
         matrix_str = [[str(y) for y in x] for x in self.matrix]
         fig = ff.create_annotated_heatmap(self.matrix, 
                                           x=self.labels,
@@ -38,7 +41,7 @@ class ConfusionMatrixVisualizer:
             "xaxis" : {"title" : "Predicted Value"},
             "yaxis" : {"title" : "Real Value"},
         }
-        
+
         fig.show()
 
 class HyperparameterTracker:
@@ -87,7 +90,7 @@ class HyperparameterVisualizer:
         self.target = deserialized['target']
         self.low_means_good = deserialized['low_means_good']
 
-    def visualize(self):
+    def visualize(self, uuid, description):
         color_scale = px.colors.diverging.Tealrose
         if not self.low_means_good:
             color_scale = list(reversed(color_scale))
@@ -97,3 +100,45 @@ class HyperparameterVisualizer:
                                       dimensions=self.hyperparameters,
                                       color_continuous_scale=color_scale)
         fig.show()
+
+
+class TTATracker:
+    MEASURE_TYPE = "tta"
+
+    def __init__(self, benchmark):
+        self.benchmark = benchmark
+
+    def track(self, accuracies, description):
+        print(accuracies)
+        serialized = self.serialize(accuracies)
+        self.benchmark.log(description, self.MEASURE_TYPE, serialized)
+
+    def serialize(self, accuracies):
+        return pickle.dumps({'accuracies': accuracies})
+
+
+class TTAVisualizer:
+    def __init__(self, serialized_bytes):
+        deserialized = pickle.loads(serialized_bytes)
+        self.accuracies = deserialized['accuracies']
+
+    def visualize(self, uuid, description):
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111)
+
+        x_values = []
+        for i in range(len(self.accuracies)):
+            x_values.append(i + 1)
+
+        plt.xticks(rotation=90)
+        ax.plot(['{:.1f}'.format(x) for x in x_values],
+            self.accuracies,
+            label=("Run from " + uuid))
+
+        plt.legend(loc=2)
+        ax.set_ylabel("accuracy")
+        ax.set_xlabel("epoch")
+        plt.title("Time to accuracy")
+
+        ax.yaxis.set_major_locator(ticker.LinearLocator(12))
+        plt.show()
