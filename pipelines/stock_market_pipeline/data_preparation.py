@@ -5,11 +5,11 @@ from keras.layers import *
 from sklearn.preprocessing import MinMaxScaler
 import os
 import sys
-import e2ebench
+import e2ebench as eb
+from benchmarking import bm
 
 
-@e2ebench.MeasureTime(bm, description="Preparation Time")
-@e2ebench.MeasureEnergy(bm, description="Preparation Energy usage")
+@eb.BenchmarkSupervisor([eb.MemoryMetric('prep memory'), eb.TimeMetric('prep time'), eb.PowerMetric('prep power')], bm)
 def prepare_data():
 
     # download a CSV of your choice on yahoo finance

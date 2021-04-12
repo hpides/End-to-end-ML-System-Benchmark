@@ -4,13 +4,11 @@ from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras.optimizers import Adam
 import os
 import sys
-import e2ebench
+import e2ebench as eb
 from benchmarking import bm
 
 
-@e2ebench.MeasureTime(bm, description="Training time")
-@e2ebench.MeasureThroughput(bm, description="Training throughput")
-@e2ebench.MeasureTimeToAccuracy(bm, description="Time to Accuracy")
+@eb.BenchmarkSupervisor([eb.MemoryMetric('train memory'), eb.TimeMetric('train time'), eb.PowerMetric('train power')], bm)
 def train():
 
     # Model configuration

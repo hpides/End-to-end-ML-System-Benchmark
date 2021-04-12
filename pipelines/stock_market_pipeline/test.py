@@ -3,11 +3,11 @@ import pandas as pd
 import numpy as np
 import os
 import sys
-import e2ebench
+import e2ebench as eb
+from benchmarking import bm
 
 
-@e2ebench.MeasureTime(bm, description="Testing Time")
-# @e2ebench.MeasureEnergy(bm, description="Testing Energy usage")
+@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time'), eb.PowerMetric('test power')], bm)
 def test(df, model, sc):
 
     # Getting the predicted stock price of 2017

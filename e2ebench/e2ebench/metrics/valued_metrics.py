@@ -19,6 +19,7 @@ class ConfusionMatrixTracker:
     def serialize(self, matrix, labels):
         return pickle.dumps({'matrix': matrix, 'labels': labels})
 
+
 class ConfusionMatrixVisualizer:
     def __init__(self, serialized_bytes):
         deserialized = pickle.loads(serialized_bytes)
@@ -40,6 +41,7 @@ class ConfusionMatrixVisualizer:
         }
         
         fig.show()
+
 
 class HyperparameterTracker:
     MEASURE_TYPE = "hyperparameters"
@@ -78,6 +80,7 @@ class HyperparameterTracker:
             'target' : self.target,
             'low_means_good' : self.low_means_good
         })
+
 
 class HyperparameterVisualizer:
     def __init__(self, serialized_bytes):

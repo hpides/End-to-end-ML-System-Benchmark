@@ -5,11 +5,12 @@ import os
 import sys
 import e2ebench
 from benchmarking import bm
+import e2ebench as eb
 
 
-@e2ebench.MeasureTime(bm, description="Testing time")
-@e2ebench.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
+@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time'), eb.PowerMetric('test power')], bm)
 def test(model):
+    cmt = eb.ConfusionMatrixTracker(bm)
 
     # n = 32768  # 2**15
     n = 1024
@@ -41,5 +42,7 @@ def test(model):
                "heavy industry", "dense trees", "scattered tree",
                "brush, scrub", "low plants", "bare rock or paved",
                "bare soil or sand", "water"]
+
+    cmt.track(con_mat, classes, "confusion matrix")
 
     return {"confusion matrix": con_mat, "classes": classes}
