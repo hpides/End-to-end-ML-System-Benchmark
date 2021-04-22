@@ -142,3 +142,45 @@ class TTAVisualizer:
 
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         plt.show()
+
+
+class LossTracker:
+    MEASURE_TYPE = "loss"
+
+    def __init__(self, benchmark):
+        self.benchmark = benchmark
+
+    def track(self, loss, description):
+        serialized = self.serialize(loss)
+        self.benchmark.log(description, self.MEASURE_TYPE, serialized)
+
+    def serialize(self, accuracies):
+        return pickle.dumps({'loss': accuracies})
+
+
+class LossVisualizer:
+    def __init__(self, serialized_bytes):
+        self.loss = []
+        for values in serialized_bytes:
+            self.loss.append(pickle.loads(values)['loss'])
+
+    def visualize(self, uuid, description, starts):
+        fig = plt.figure(figsize=(12, 8))
+        ax = fig.add_subplot(111)
+
+        for run in range(len(self.loss)):
+            x_values = []
+            for i in range(len(self.loss[run])):
+                x_values.append(i + 1)
+            plt.xticks(rotation=90)
+            ax.plot(['{:.1f}'.format(x) for x in x_values],
+                self.loss[run],
+                label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
+
+        plt.legend(loc=2)
+        ax.set_ylabel("loss")
+        ax.set_xlabel("epoch")
+        plt.title("Training loss")
+
+        ax.yaxis.set_major_locator(ticker.LinearLocator(12))
+        plt.show()
