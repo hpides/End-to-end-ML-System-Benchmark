@@ -28,7 +28,7 @@ class ConfusionMatrixVisualizer:
         self.matrix = deserialized['matrix']
         self.labels = deserialized['labels']
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
         matrix_str = [[str(y) for y in x] for x in self.matrix]
         fig = ff.create_annotated_heatmap(self.matrix, 
                                           x=self.labels,
@@ -43,7 +43,6 @@ class ConfusionMatrixVisualizer:
         }
 
         fig.show()
-
 
 class HyperparameterTracker:
     MEASURE_TYPE = "hyperparameters"
@@ -83,7 +82,6 @@ class HyperparameterTracker:
             'low_means_good' : self.low_means_good
         })
 
-
 class HyperparameterVisualizer:
     def __init__(self, serialized_bytes):
         deserialized = pickle.loads(serialized_bytes)
@@ -92,7 +90,7 @@ class HyperparameterVisualizer:
         self.target = deserialized['target']
         self.low_means_good = deserialized['low_means_good']
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
         color_scale = px.colors.diverging.Tealrose
         if not self.low_means_good:
             color_scale = list(reversed(color_scale))
@@ -120,21 +118,22 @@ class TTATracker:
 
 class TTAVisualizer:
     def __init__(self, serialized_bytes):
-        deserialized = pickle.loads(serialized_bytes)
-        self.accuracies = deserialized['accuracies']
+        self.accuracies = []
+        for values in serialized_bytes:
+            self.accuracies.append(pickle.loads(values)['accuracies'])
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
         fig = plt.figure(figsize=(12, 8))
         ax = fig.add_subplot(111)
 
-        x_values = []
-        for i in range(len(self.accuracies)):
-            x_values.append(i + 1)
-
-        plt.xticks(rotation=90)
-        ax.plot(['{:.1f}'.format(x) for x in x_values],
-            self.accuracies,
-            label=("Run from " + uuid))
+        for run in range(len(self.accuracies)):
+            x_values = []
+            for i in range(len(self.accuracies[run])):
+                x_values.append(i + 1)
+            plt.xticks(rotation=90)
+            ax.plot(['{:.1f}'.format(x) for x in x_values],
+                self.accuracies[run],
+                label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
 
         plt.legend(loc=2)
         ax.set_ylabel("accuracy")
