@@ -100,16 +100,21 @@ class TimeMetric(Metric):
 
 class TimeVisualizer:
     def __init__(self, serialized_bytes):
-        self.data = pickle.loads(serialized_bytes)
+        self.data = []
+        for values in serialized_bytes:
+            self.data.append(pickle.loads(values))
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
+
+        for s in range(len(starts)):
+            starts[s] = starts[s].isoformat(' ', 'seconds')
 
         dic = {"uuid": [uuid]}
         dic[description] = self.data
 
         df = pd.DataFrame(
             dic,
-            index=[uuid]
+            index=starts
         )
 
         ax = df.plot.barh(stacked=False)
@@ -158,18 +163,26 @@ class MemoryMetric(Metric):
 
 class MemoryVisualizer:
     def __init__(self, serialized_bytes):
-        deserialized = pickle.loads(serialized_bytes)
-        self.timestamps = deserialized["timestamps"]
-        self.measurements = deserialized["measurements"]
+        self.timestamps = []
+        self.measurements = []
+        for values in serialized_bytes:
+            deserialized = pickle.loads(values)
+            self.timestamps.append(deserialized["timestamps"])
+            self.measurements.append(deserialized["measurements"])
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
 
         fig = plt.figure(figsize=(12, 8))
         ax = fig.add_subplot(111)
 
-        ax.plot(self.timestamps,
-                self.measurements,
-                label=("Run from " + uuid))
+        for run in range(len(self.timestamps)):
+            relative_timestamps = []
+            for timestamp in self.timestamps[run]:
+                difference = timestamp - self.timestamps[run][0]
+                relative_timestamps.append(difference.total_seconds())
+            ax.plot(relative_timestamps,
+                    self.measurements[run],
+                    label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
 
         ax.set_ylabel("MB used")
         ax.set_xlabel("Time in seconds")
@@ -200,16 +213,21 @@ class EnergyMetric(Metric):
 
 class EnergyVisualizer:
     def __init__(self, serialized_bytes):
-        self.data = pickle.loads(serialized_bytes)
+        self.data = []
+        for values in serialized_bytes:
+            self.data.append(pickle.loads(values))
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
+
+        for s in range(len(starts)):
+            starts[s] = starts[s].isoformat(' ', 'seconds')
 
         dic = {"uuid": [uuid]}
         dic[description] = self.data
 
         df = pd.DataFrame(
             dic,
-            index=[uuid]
+            index=starts
         )
 
         ax = df.plot.barh(stacked=False)
@@ -263,18 +281,26 @@ class PowerMetric(Metric):
 
 class PowerVisualizer:
     def __init__(self, serialized_bytes):
-        deserialized = pickle.loads(serialized_bytes)
-        self.timestamps = deserialized["timestamps"]
-        self.measurements = deserialized["measurements"]
+        self.timestamps = []
+        self.measurements = []
+        for values in serialized_bytes:
+            deserialized = pickle.loads(values)
+            self.timestamps.append(deserialized["timestamps"])
+            self.measurements.append(deserialized["measurements"])
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
 
         fig = plt.figure(figsize=(12, 8))
         ax = fig.add_subplot(111)
 
-        ax.plot(self.timestamps,
-                self.measurements,
-                label=("Run from " + uuid))
+        for run in range(len(self.timestamps)):
+            relative_timestamps = []
+            for timestamp in self.timestamps[run]:
+                difference = timestamp - self.timestamps[run][0]
+                relative_timestamps.append(difference.total_seconds())
+            ax.plot(relative_timestamps,
+                    self.measurements[run],
+                    label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
 
         ax.set_ylabel("Watt used")
         ax.set_xlabel("Time in seconds")
@@ -306,16 +332,21 @@ class LatencyMetric(Metric):
 
 class LatencyVisualizer:
     def __init__(self, serialized_bytes):
-        self.data = pickle.loads(serialized_bytes)
+        self.data = []
+        for values in serialized_bytes:
+            self.data.append(pickle.loads(values))
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
+
+        for s in range(len(starts)):
+            starts[s] = starts[s].isoformat(' ', 'seconds')
 
         dic = {"uuid": [uuid]}
         dic[description] = self.data
 
         df = pd.DataFrame(
             dic,
-            index=[uuid]
+            index=starts
         )
 
         ax = df.plot.barh(stacked=False)
@@ -353,16 +384,21 @@ class ThroughputMetric(Metric):
 
 class ThroughputVisualizer:
     def __init__(self, serialized_bytes):
-        self.data = pickle.loads(serialized_bytes)
+        self.data = []
+        for values in serialized_bytes:
+            self.data.append(pickle.loads(values))
 
-    def visualize(self, uuid, description):
+    def visualize(self, uuid, description, starts):
+
+        for s in range(len(starts)):
+            starts[s] = starts[s].isoformat(' ', 'seconds')
 
         dic = {"uuid": [uuid]}
         dic[description] = self.data
 
         df = pd.DataFrame(
             dic,
-            index=[uuid]
+            index=starts
         )
 
         ax = df.plot.barh(stacked=False)
