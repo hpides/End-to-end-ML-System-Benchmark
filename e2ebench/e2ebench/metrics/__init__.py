@@ -1,5 +1,5 @@
 from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker, HyperparameterTracker, ConfusionMatrixVisualizer, \
-    HyperparameterVisualizer, TTATracker, TTAVisualizer
+    HyperparameterVisualizer, TTATracker, TTAVisualizer, LossTracker, LossVisualizer
 from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor, TimeMetric, MemoryMetric, PowerMetric, \
     EnergyMetric, TimeVisualizer, MemoryVisualizer, PowerVisualizer, EnergyVisualizer, LatencyMetric, \
     LatencyVisualizer, ThroughputMetric, ThroughputVisualizer
@@ -15,5 +15,6 @@ measurement_type_mapper = {
     "energy": EnergyVisualizer,
     "latency": LatencyVisualizer,
     "throughput": ThroughputVisualizer,
-    "tta": TTAVisualizer
+    "tta": TTAVisualizer,
+    "loss": LossVisualizer
 }
