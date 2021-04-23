@@ -7,6 +7,13 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from sklearn.metrics import ConfusionMatrixDisplay
 
+class Visualizer:
+    def __init__(self, df):
+        assert 'uuid' in df.columns
+        assert 'type' in df.columns
+        assert 'desc' in df.columns
+        assert 'bytes' in df.columns
+        self.df = df
 
 class ConfusionMatrixTracker:
     MEASURE_TYPE = "confusion-matrix"
@@ -22,27 +29,26 @@ class ConfusionMatrixTracker:
         return pickle.dumps({'matrix': matrix, 'labels': labels})
 
 
-class ConfusionMatrixVisualizer:
-    def __init__(self, serialized_bytes):
-        deserialized = pickle.loads(serialized_bytes)
-        self.matrix = deserialized['matrix']
-        self.labels = deserialized['labels']
+class ConfusionMatrixVisualizer(Visualizer):
+    def visualize(self):
+        for _, row in self.df.iterrows():
+            deserialized = pickle.loads(row['bytes'])
+            matrix = deserialized['matrix']
+            labels = deserialized['labels']
+            matrix_str = [[str(y) for y in x] for x in matrix]
+            fig = ff.create_annotated_heatmap(matrix, 
+                                            x=labels,
+                                            y=labels,
+                                            annotation_text=matrix_str,
+                                            colorscale=px.colors.diverging.Tealrose
+                                            )
 
-    def visualize(self, uuid, description, starts):
-        matrix_str = [[str(y) for y in x] for x in self.matrix]
-        fig = ff.create_annotated_heatmap(self.matrix, 
-                                          x=self.labels,
-                                          y=self.labels,
-                                          annotation_text=matrix_str,
-                                          colorscale=px.colors.diverging.Tealrose
-                                          )
+            layout = {
+                "xaxis" : {"title" : "Predicted Value"},
+                "yaxis" : {"title" : "Real Value"},
+            }
 
-        layout = {
-            "xaxis" : {"title" : "Predicted Value"},
-            "yaxis" : {"title" : "Real Value"},
-        }
-
-        fig.show()
+            fig.show()
 
 class HyperparameterTracker:
     MEASURE_TYPE = "hyperparameters"

@@ -114,7 +114,6 @@ def prompt_for_description(meas_df):
     return meas_df
 
 
-
 def main():
     args = get_args()
 
@@ -132,9 +131,15 @@ def main():
     if args.descriptions is None:
         meas_df = prompt_for_description(meas_df)
     
+    serialized_query = session.query(Measurement.id, Measurement.value).filter(Measurement.id.in_(meas_df['id']))
+    serialized_df = pd.DataFrame(serialized_query.all(), columns=['id', 'bytes'])
+    meas_df = meas_df.merge(serialized_df, on='id')
     
-
-    
+    for meas_type, type_group in meas_df.groupby('type'):
+        VisualizerClass = metrics.measurement_type_mapper[meas_type]
+        measurement = VisualizerClass(type_group)
+        measurement.visualize()
+        session.close()
 
 if __name__ == "__main__":
     main()
