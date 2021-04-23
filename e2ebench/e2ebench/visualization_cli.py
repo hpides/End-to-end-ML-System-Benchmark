@@ -10,9 +10,8 @@ from PyInquirer import prompt, Separator
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 
-from e2ebench.datamodel import Measurement
-from e2ebench.datamodel import BenchmarkMetadata
-from e2ebench import metrics
+from e2ebench.datamodel import Measurement, BenchmarkMetadata
+from e2ebench.visualization import visualization_func_mapper
 
 def get_args():
     parser = argparse.ArgumentParser(description="Visualization CLI for End to End ML System Benchmark")
@@ -138,7 +137,7 @@ def main():
     meas_df = meas_df.merge(meta_df, on='uuid')
     
     for meas_type, type_group in meas_df.groupby('type'):
-        visualization_func = metrics.measurement_type_mapper[meas_type]
+        visualization_func = visualization_func_mapper[meas_type]
         visualization_func(type_group)
 
     session.close()
