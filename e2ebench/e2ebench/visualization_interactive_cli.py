@@ -16,6 +16,7 @@ def main():
     ]
 
     db_file = prompt(question0).get("database")
+    
     engine = create_engine(f'sqlite+pysqlite:///{db_file}')
     Session = sessionmaker(bind=engine)
     session = Session()

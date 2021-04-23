@@ -313,14 +313,15 @@ def plot_confusion_matrix_plotly(df_from_cli):
 
         fig.show()
 
-metrics_dict = {"Time": plot_time,
-                "TTA": plot_TTA,
+metrics_dict = {
                 "Loss": plot_loss,
                 "Batch": plot_batch_influence,
                 "Batch and Epoch": plot_surface,
                 "Learning Rate": plot_lr_influence,
-                "Memory": plot_memory,
-                "Energy": plot_energy,
+                "time": plot_time,
+                "TTA": plot_TTA,
+                "memory": plot_memory,
+                "energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
                 "Latency": plot_latency,
                 "Throughput": plot_throughput,
