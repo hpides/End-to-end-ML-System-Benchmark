@@ -32,7 +32,7 @@ def create_dfs(session):
                                BenchmarkMetadata.description,
                                BenchmarkMetadata.start_time)
     meas_df = pd.DataFrame(meas_query.all(), columns=['id', 'uuid', 'type', 'desc'])
-    meta_df = pd.DataFrame(meta_query.all(), columns=['uuid', 'desc', 'start_time'])
+    meta_df = pd.DataFrame(meta_query.all(), columns=['uuid', 'meta_desc', 'meta_start_time'])
 
     return meas_df, meta_df
 
@@ -54,8 +54,8 @@ def prompt_for_uuid(meas_df, meta_df):
     prompt_choices = [
             {'name' : 
                 f"{db_entry['uuid']}" +
-                f", {str(db_entry['start_time'])}" +
-                f"{', description: ' + db_entry['desc'] if db_entry['desc'] else ''}",
+                f", {str(db_entry['meta_start_time'])}" +
+                f"{', description: ' + db_entry['meta_desc'] if db_entry['meta_desc'] else ''}",
              'value': db_entry['uuid']}
             for _, db_entry in meta_df.iterrows()
     ]
@@ -131,15 +131,19 @@ def main():
     if args.descriptions is None:
         meas_df = prompt_for_description(meas_df)
     
-    serialized_query = session.query(Measurement.id, Measurement.value).filter(Measurement.id.in_(meas_df['id']))
-    serialized_df = pd.DataFrame(serialized_query.all(), columns=['id', 'bytes'])
+    serialized_query = session.query(Measurement.id, 
+                                     Measurement.datetime,
+                                     Measurement.value).filter(Measurement.id.in_(meas_df['id']))
+    serialized_df = pd.DataFrame(serialized_query.all(), columns=['id', 'measurement_time', 'bytes'])
     meas_df = meas_df.merge(serialized_df, on='id')
+    meas_df = meas_df.merge(meta_df, on='uuid')
     
     for meas_type, type_group in meas_df.groupby('type'):
-        VisualizerClass = metrics.measurement_type_mapper[meas_type]
-        measurement = VisualizerClass(type_group)
-        measurement.visualize()
-        session.close()
+        visualization_func = metrics.measurement_type_mapper[meas_type]
+        visualization_func(type_group)
+
+    session.close()
+
 
 if __name__ == "__main__":
     main()

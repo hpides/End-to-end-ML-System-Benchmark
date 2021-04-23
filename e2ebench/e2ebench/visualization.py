@@ -277,6 +277,8 @@ def plot_throughput(values, meta):
 def plot_latency(values, meta):
     plot_barh(values, meta, "Latency", "Latency", "Entries per second")
 
+def plot_hyperparameters(df_from_cli):
+    pass
 
 metrics_dict = {"Time": plot_time,
                 "TTA": plot_TTA,
