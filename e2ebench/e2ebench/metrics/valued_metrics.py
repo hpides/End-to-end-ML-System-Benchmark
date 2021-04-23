@@ -7,14 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from sklearn.metrics import ConfusionMatrixDisplay
 
-class Visualizer:
-    def __init__(self, df):
-        assert 'uuid' in df.columns
-        assert 'type' in df.columns
-        assert 'desc' in df.columns
-        assert 'bytes' in df.columns
-        self.df = df
-
 class ConfusionMatrixTracker:
     MEASURE_TYPE = "confusion-matrix"
 
@@ -28,8 +20,7 @@ class ConfusionMatrixTracker:
     def serialize(self, matrix, labels):
         return pickle.dumps({'matrix': matrix, 'labels': labels})
 
-
-class ConfusionMatrixVisualizer(Visualizer):
+class ConfusionMatrixVisualizer:
     def visualize(self):
         for _, row in self.df.iterrows():
             deserialized = pickle.loads(row['bytes'])
@@ -107,7 +98,6 @@ class HyperparameterVisualizer:
                                       color_continuous_scale=color_scale)
         fig.show()
 
-
 class TTATracker:
     MEASURE_TYPE = "tta"
 
@@ -120,7 +110,6 @@ class TTATracker:
 
     def serialize(self, accuracies):
         return pickle.dumps({'accuracies': accuracies})
-
 
 class TTAVisualizer:
     def __init__(self, serialized_bytes):
@@ -149,7 +138,6 @@ class TTAVisualizer:
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         plt.show()
 
-
 class LossTracker:
     MEASURE_TYPE = "loss"
 
@@ -162,7 +150,6 @@ class LossTracker:
 
     def serialize(self, accuracies):
         return pickle.dumps({'loss': accuracies})
-
 
 class LossVisualizer:
     def __init__(self, serialized_bytes):

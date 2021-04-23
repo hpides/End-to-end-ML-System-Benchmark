@@ -35,7 +35,6 @@ def visualize(uuids, database_file):
     finally:
         session.close()
 
-
 # visualize multiple uuids, also works with only a single one
 def make_dataframe_from_database(uuids, session):
 
@@ -273,12 +272,46 @@ def plot_time(values, meta):
 def plot_throughput(values, meta):
     plot_barh(values, meta, "Throughput", "Throughput", "Seconds per entry")
 
-
 def plot_latency(values, meta):
     plot_barh(values, meta, "Latency", "Latency", "Entries per second")
 
 def plot_hyperparameters(df_from_cli):
-    pass
+    color_scale = px.colors.diverging.Tealrose
+    for row in df_from_cli.iterrows():
+        deserialized = pickle.loads(row['bytes'])
+        hyperparams = deserialized['hyperparameters']
+        hyperparam_df = deserialized['df']
+        target = deserialized['target']
+        target_low_means_good = deserialized['low_means_good']
+
+        if not low_means_good:
+            color_scale = list(reversed(color_scale))
+
+        fig = px.parallel_coordinates(hyperparam_df, 
+                                      color=target,
+                                      dimensions=hyperparams,
+                                      color_continuous_scale=color_scale)
+        fig.show()
+
+def plot_confusion_matrix_plotly(df_from_cli):
+    for _, row in df_from_cli.iterrows():
+        deserialized = pickle.loads(row['bytes'])
+        matrix = deserialized['matrix']
+        labels = deserialized['labels']
+        matrix_str = [[str(y) for y in x] for x in matrix]
+        fig = ff.create_annotated_heatmap(matrix, 
+                                        x=labels,
+                                        y=labels,
+                                        annotation_text=matrix_str,
+                                        colorscale=px.colors.diverging.Tealrose
+                                        )
+
+        layout = {
+            "xaxis" : {"title" : "Predicted Value"},
+            "yaxis" : {"title" : "Real Value"},
+        }
+
+        fig.show()
 
 metrics_dict = {"Time": plot_time,
                 "TTA": plot_TTA,
@@ -290,5 +323,9 @@ metrics_dict = {"Time": plot_time,
                 "Energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
                 "Latency": plot_latency,
-                "Throughput": plot_throughput}
+                "Throughput": plot_throughput,
+                "hyperparameters" : plot_hyperparameters,
+                "confusion-matrix" : plot_confusion_matrix_plotly,
+                "loss" : plot_loss,
+                "tta" : plot_TTA}
 
