@@ -1,15 +1,17 @@
-from datamodel import Measurement
-from datamodel import BenchmarkMetadata
-from sqlalchemy.orm import sessionmaker
-from sqlalchemy import create_engine, asc
-import pandas as pd
-import seaborn as sn
-import numpy as np
+from math import floor
+import pickle
+
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from matplotlib import cm
-from math import floor
+import numpy as np
+import pandas as pd
+import plotly.express as px
+import seaborn as sn
+from sqlalchemy.orm import sessionmaker
+from sqlalchemy import create_engine, asc
 
+from e2ebench.datamodel import Measurement, BenchmarkMetadata
 
 def visualize(uuids, database_file):
     engine = create_engine(f'sqlite+pysqlite:///{database_file}')
@@ -34,7 +36,6 @@ def visualize(uuids, database_file):
         raise
     finally:
         session.close()
-
 
 # visualize multiple uuids, also works with only a single one
 def make_dataframe_from_database(uuids, session):
@@ -273,20 +274,78 @@ def plot_time(values, meta):
 def plot_throughput(values, meta):
     plot_barh(values, meta, "Throughput", "Throughput", "Seconds per entry")
 
-
 def plot_latency(values, meta):
     plot_barh(values, meta, "Latency", "Latency", "Entries per second")
 
+def plot_hyperparameters(df_from_cli):
+    color_scale = px.colors.diverging.Tealrose
+    for row in df_from_cli.iterrows():
+        deserialized = pickle.loads(row['bytes'])
+        hyperparams = deserialized['hyperparameters']
+        hyperparam_df = deserialized['df']
+        target = deserialized['target']
+        target_low_means_good = deserialized['low_means_good']
 
-metrics_dict = {"Time": plot_time,
-                "TTA": plot_TTA,
+        if not low_means_good:
+            color_scale = list(reversed(color_scale))
+
+        fig = px.parallel_coordinates(hyperparam_df, 
+                                      color=target,
+                                      dimensions=hyperparams,
+                                      color_continuous_scale=color_scale)
+        fig.show()
+
+def plot_confusion_matrix_plotly(df_from_cli):
+    for _, row in df_from_cli.iterrows():
+        deserialized = pickle.loads(row['bytes'])
+        matrix = deserialized['matrix']
+        labels = deserialized['labels']
+        matrix_str = [[str(y) for y in x] for x in matrix]
+        fig = ff.create_annotated_heatmap(matrix, 
+                                        x=labels,
+                                        y=labels,
+                                        annotation_text=matrix_str,
+                                        colorscale=px.colors.diverging.Tealrose
+                                        )
+
+        layout = {
+            "xaxis" : {"title" : "Predicted Value"},
+            "yaxis" : {"title" : "Real Value"},
+        }
+
+        fig.show()
+
+def plot_throughput_plotly(df_from_cli):
+    df_from_cli['measurement_time_str'] = df_from_cli['measurement_time'].dt.strftime("%Y-%m-%d\t%H:%M:%S")
+    df_from_cli['x_labels'] = df_from_cli['measurement_time_str'] + "\n" + df_from_cli['desc']
+    df_from_cli['throughput'] = df_from_cli['bytes'].map(lambda byte_obj: pickle.loads(byte_obj))
+    df_from_cli.sort_values(by='measurement_time', inplace=True)
+    fig = px.bar(df_from_cli, 
+                 x='x_labels', y='throughput',
+                 hover_data={'uuid': True,
+                             'type': True,
+                             'description': df_from_cli['desc'],
+                             'meta description' : df_from_cli['meta_desc'].replace('', 'None'),
+                             'meta start time' : df_from_cli['meta_start_time']},
+                 color='throughput',
+                 labels={'x_labels' : 'Measurement', 'throughput' : 'Throughput'}
+    )
+    fig.show()
+
+visualization_func_mapper = {
                 "Loss": plot_loss,
                 "Batch": plot_batch_influence,
                 "Batch and Epoch": plot_surface,
                 "Learning Rate": plot_lr_influence,
-                "Memory": plot_memory,
-                "Energy": plot_energy,
+                "time": plot_time,
+                "TTA": plot_TTA,
+                "memory": plot_memory,
+                "energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
                 "Latency": plot_latency,
-                "Throughput": plot_throughput}
+                "throughput": plot_throughput_plotly,
+                "hyperparameters" : plot_hyperparameters,
+                "confusion-matrix" : plot_confusion_matrix_plotly,
+                "loss" : plot_loss,
+                "tta" : plot_TTA}
 

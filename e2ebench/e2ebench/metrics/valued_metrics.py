@@ -7,7 +7,6 @@ import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
 from sklearn.metrics import ConfusionMatrixDisplay
 
-
 class ConfusionMatrixTracker:
     MEASURE_TYPE = "confusion-matrix"
 
@@ -21,28 +20,26 @@ class ConfusionMatrixTracker:
     def serialize(self, matrix, labels):
         return pickle.dumps({'matrix': matrix, 'labels': labels})
 
-
 class ConfusionMatrixVisualizer:
-    def __init__(self, serialized_bytes):
-        deserialized = pickle.loads(serialized_bytes)
-        self.matrix = deserialized['matrix']
-        self.labels = deserialized['labels']
+    def visualize(self):
+        for _, row in self.df.iterrows():
+            deserialized = pickle.loads(row['bytes'])
+            matrix = deserialized['matrix']
+            labels = deserialized['labels']
+            matrix_str = [[str(y) for y in x] for x in matrix]
+            fig = ff.create_annotated_heatmap(matrix, 
+                                            x=labels,
+                                            y=labels,
+                                            annotation_text=matrix_str,
+                                            colorscale=px.colors.diverging.Tealrose
+                                            )
 
-    def visualize(self, uuid, description, starts):
-        matrix_str = [[str(y) for y in x] for x in self.matrix]
-        fig = ff.create_annotated_heatmap(self.matrix, 
-                                          x=self.labels,
-                                          y=self.labels,
-                                          annotation_text=matrix_str,
-                                          colorscale=px.colors.diverging.Tealrose
-                                          )
+            layout = {
+                "xaxis" : {"title" : "Predicted Value"},
+                "yaxis" : {"title" : "Real Value"},
+            }
 
-        layout = {
-            "xaxis" : {"title" : "Predicted Value"},
-            "yaxis" : {"title" : "Real Value"},
-        }
-
-        fig.show()
+            fig.show()
 
 class HyperparameterTracker:
     MEASURE_TYPE = "hyperparameters"
@@ -101,7 +98,6 @@ class HyperparameterVisualizer:
                                       color_continuous_scale=color_scale)
         fig.show()
 
-
 class TTATracker:
     MEASURE_TYPE = "tta"
 
@@ -114,7 +110,6 @@ class TTATracker:
 
     def serialize(self, accuracies):
         return pickle.dumps({'accuracies': accuracies})
-
 
 class TTAVisualizer:
     def __init__(self, serialized_bytes):
@@ -143,7 +138,6 @@ class TTAVisualizer:
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         plt.show()
 
-
 class LossTracker:
     MEASURE_TYPE = "loss"
 
@@ -156,7 +150,6 @@ class LossTracker:
 
     def serialize(self, accuracies):
         return pickle.dumps({'loss': accuracies})
-
 
 class LossVisualizer:
     def __init__(self, serialized_bytes):
