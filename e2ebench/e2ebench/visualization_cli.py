@@ -1,7 +1,5 @@
 import argparse
-from collections import defaultdict
 from itertools import chain
-from operator import attrgetter
 import pickle
 import os
 import sys

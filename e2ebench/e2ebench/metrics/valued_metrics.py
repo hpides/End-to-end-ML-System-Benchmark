@@ -1,11 +1,6 @@
 import pickle
 
 import pandas as pd
-import plotly.express as px
-import plotly.figure_factory as ff
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
-from sklearn.metrics import ConfusionMatrixDisplay
 
 class ConfusionMatrixTracker:
     MEASURE_TYPE = "confusion-matrix"
@@ -73,33 +68,6 @@ class TTATracker:
 
     def serialize(self, accuracies):
         return pickle.dumps(accuracies)
-
-class TTAVisualizer:
-    def __init__(self, serialized_bytes):
-        self.accuracies = []
-        for values in serialized_bytes:
-            self.accuracies.append(pickle.loads(values)['accuracies'])
-
-    def visualize(self, uuid, description, starts):
-        fig = plt.figure(figsize=(12, 8))
-        ax = fig.add_subplot(111)
-
-        for run in range(len(self.accuracies)):
-            x_values = []
-            for i in range(len(self.accuracies[run])):
-                x_values.append(i + 1)
-            plt.xticks(rotation=90)
-            ax.plot(['{:.1f}'.format(x) for x in x_values],
-                self.accuracies[run],
-                label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
-
-        plt.legend(loc=2)
-        ax.set_ylabel("accuracy")
-        ax.set_xlabel("epoch")
-        plt.title("Time to accuracy")
-
-        ax.yaxis.set_major_locator(ticker.LinearLocator(12))
-        plt.show()
 
 class LossTracker:
     MEASURE_TYPE = "loss"
