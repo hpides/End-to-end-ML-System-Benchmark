@@ -1,7 +1,6 @@
 import argparse
-from collections import defaultdict
 from itertools import chain
-from operator import attrgetter
+import pickle
 import os
 import sys
 
@@ -19,6 +18,7 @@ def get_args():
     parser.add_argument("-u", "--uuids", nargs="+", help="UUIDs of the benchmarks to visualize", required=False)
     parser.add_argument("-t", "--types", nargs="+", help="measurement types", required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help="descriptions", required=False)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib")
     
     return parser.parse_args()
 
@@ -30,7 +30,7 @@ def create_dfs(session):
     meta_query = session.query(BenchmarkMetadata.uuid,
                                BenchmarkMetadata.description,
                                BenchmarkMetadata.start_time)
-    meas_df = pd.DataFrame(meas_query.all(), columns=['id', 'uuid', 'type', 'desc'])
+    meas_df = pd.DataFrame(meas_query.all(), columns=['id', 'uuid', 'measurement_type', 'measurement_desc'])
     meta_df = pd.DataFrame(meta_query.all(), columns=['uuid', 'meta_desc', 'meta_start_time'])
 
     return meas_df, meta_df
@@ -40,9 +40,9 @@ def filter_by_args(meas_df, meta_df, args):
         meas_df = meas_df[meas_df['uuid'].isin([args.uuids])]
         meta_df = meta_df[meta_df['uuid'].isin([args.uuids])]
     if args.types:
-        meas_df = meas_df[meas_df['type'].isin([args.types])]
+        meas_df = meas_df[meas_df['measurement_type'].isin([args.types])]
     if args.descriptions:
-        meas_df = meas_df[meas_df['desc'].isin([args.descriptions])]
+        meas_df = meas_df[meas_df['measurement_desc'].isin([args.descriptions])]
 
     if meas_df.empty:
         raise Exception("There are no database entries with the given uuids, types and descriptions.")
@@ -74,7 +74,7 @@ def prompt_for_types(meas_df):
     prompt_choices = []
     for uuid, uuid_group in meas_df.groupby('uuid'):
         prompt_choices.append(Separator(f"Available types for uuid {uuid}"))
-        for meas_type, meas_type_group in uuid_group.groupby('type'):
+        for meas_type, meas_type_group in uuid_group.groupby('measurement_type'):
             prompt_choices.append(
                 {'name' : meas_type,
                  'value' : list(meas_type_group['id'])}
@@ -93,12 +93,12 @@ def prompt_for_types(meas_df):
 
 def prompt_for_description(meas_df):
     prompt_choices = []
-    for (uuid, meas_type), u_t_group in meas_df.groupby(['uuid', 'type']):
+    for (uuid, meas_type), u_t_group in meas_df.groupby(['uuid', 'measurement_type']):
         prompt_choices.append(Separator(f"Available descriptions for uuid {uuid} and type {meas_type}"))
-        for desc, desc_group in u_t_group.groupby('desc'):
+        for desc, desc_group in u_t_group.groupby('measurement_desc'):
             prompt_choices.append(
                 {'name' : desc,
-                    'value' : list(desc_group['id'])}
+                 'value' : list(desc_group['id'])}
             )
     desc_prompt = {
         'type' : 'checkbox',
@@ -131,14 +131,19 @@ def main():
     
     serialized_query = session.query(Measurement.id, 
                                      Measurement.datetime,
-                                     Measurement.value).filter(Measurement.id.in_(meas_df['id']))
-    serialized_df = pd.DataFrame(serialized_query.all(), columns=['id', 'measurement_time', 'bytes'])
+                                     Measurement.value,
+                                     Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
+    serialized_df = pd.DataFrame(serialized_query.all(), 
+                                 columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
+    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
+    serialized_df.drop(columns=['bytes'], inplace=True)
     meas_df = meas_df.merge(serialized_df, on='id')
     meas_df = meas_df.merge(meta_df, on='uuid')
     
-    for meas_type, type_group in meas_df.groupby('type'):
-        visualization_func = visualization_func_mapper[meas_type]
-        visualization_func(type_group)
+    for meas_type, type_group_df in meas_df.groupby('measurement_type'):
+        type_group_df.index = range(len(type_group_df))
+        visualization_func = visualization_func_mapper[args.plotting_backend][meas_type]
+        visualization_func(type_group_df)
 
     session.close()
 
