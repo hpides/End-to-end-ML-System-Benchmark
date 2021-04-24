@@ -278,44 +278,33 @@ def plot_throughput(values, meta):
 def plot_latency(values, meta):
     plot_barh(values, meta, "Latency", "Latency", "Entries per second")
 
-def plot_hyperparameters(df_from_cli):
-    color_scale = px.colors.diverging.Tealrose
-    for row in df_from_cli.iterrows():
-        deserialized = pickle.loads(row['bytes'])
-        hyperparams = deserialized['hyperparameters']
-        hyperparam_df = deserialized['df']
-        target = deserialized['target']
-        target_low_means_good = deserialized['low_means_good']
 
-        if not low_means_good:
-            color_scale = list(reversed(color_scale))
+class HyperparemeterVisualizer:
+    @staticmethod
+    def plot_with_plotly(df_from_cli):
+        for _, row in df_from_cli.iterrows():
+            color_scale = px.colors.diverging.Tealrose
+            data_dict = row['measurement_data']
+            hyperparams = data_dict['hyperparameters']
+            hyperparam_df = data_dict['df']
+            target = data_dict['target']
+            target_low_means_good = data_dict['low_means_good']
 
-        fig = px.parallel_coordinates(hyperparam_df, 
-                                      color=target,
-                                      dimensions=hyperparams,
-                                      color_continuous_scale=color_scale)
-        fig.show()
+            if not target_low_means_good:
+                color_scale = list(reversed(color_scale))
 
-def plot_confusion_matrix_plotly(df_from_cli):
-    for _, row in df_from_cli.iterrows():
-        deserialized = pickle.loads(row['bytes'])
-        matrix = deserialized['matrix']
-        labels = deserialized['labels']
-        matrix_str = [[str(y) for y in x] for x in matrix]
-        fig = ff.create_annotated_heatmap(matrix, 
-                                        x=labels,
-                                        y=labels,
-                                        annotation_text=matrix_str,
-                                        colorscale=px.colors.diverging.Tealrose
-                                        )
+            fig = px.parallel_coordinates(hyperparam_df, 
+                                        color=target,
+                                        dimensions=hyperparams,
+                                        color_continuous_scale=color_scale)
+            fig.show()
 
-        layout = {
-            "xaxis" : {"title" : "Predicted Value"},
-            "yaxis" : {"title" : "Real Value"},
-        }
-
-        fig.show()
-
+    @staticmethod
+    def plot_with_matplotlib(df_from_cli):
+        """
+        TODO
+        """
+        pass
 
 class ConfusionMatrixVisualizer:
     @staticmethod
@@ -345,7 +334,6 @@ class ConfusionMatrixVisualizer:
                 layout=layout
             )
             fig.show()
-
 
 class TimedeltaMultiLineChartVisualizer:
     """
@@ -503,7 +491,8 @@ visualization_func_mapper = {
         "time" : BarhVisualizer.plot_with_matplotlib,
         "loss" : EpochMultiLineChartVisualizer.plot_with_matplotlib,
         "tta" : EpochMultiLineChartVisualizer.plot_with_matplotlib,
-        "confusion-matrix" : ConfusionMatrixVisualizer.plot_with_matplotlib
+        "confusion-matrix" : ConfusionMatrixVisualizer.plot_with_matplotlib,
+        "hyperparameters" : HyperparemeterVisualizer.plot_with_matplotlib
     },
     "plotly" : {
         "throughput" : BarhVisualizer.plot_with_plotly,
@@ -514,6 +503,7 @@ visualization_func_mapper = {
         "time" : BarhVisualizer.plot_with_plotly,
         "loss" : EpochMultiLineChartVisualizer.plot_with_plotly,
         "tta" : EpochMultiLineChartVisualizer.plot_with_plotly,
-        "confusion-matrix" : ConfusionMatrixVisualizer.plot_with_plotly
+        "confusion-matrix" : ConfusionMatrixVisualizer.plot_with_plotly,
+        "hyperparameters" : HyperparemeterVisualizer.plot_with_plotly
     }
 }
