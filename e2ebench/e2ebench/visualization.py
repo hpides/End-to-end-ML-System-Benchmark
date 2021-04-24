@@ -315,18 +315,38 @@ def plot_confusion_matrix_plotly(df_from_cli):
 
         fig.show()
 
+def plot_throughput_matplotlib(df_from_cli):
+    df_from_cli['measurement_time_str'] = df_from_cli['measurement_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+    df_from_cli['x_labels'] = df_from_cli['measurement_time_str'] + " " + df_from_cli['measurement_desc']
+    df_from_cli.rename(columns={'measurement_value' : 'throughput'}, inplace=True)
+    df_from_cli.sort_values(by='measurement_time', inplace=True)
+    
+    ax = df_from_cli.plot.barh(x='x_labels', y='throughput', stacked=False)
+    plt.title("Throughput")
+    plt.xlabel("Seconds per entry")
+
+    x_offset = 0
+    y_offset = 0.02
+    for p in ax.patches:
+        b = p.get_bbox()
+        val = "{:.2f}".format(b.x1 - b.x0)
+        ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
+
+    plt.show()
+
+
 def plot_throughput_plotly(df_from_cli):
-    df_from_cli['measurement_time_str'] = df_from_cli['measurement_time'].dt.strftime("%Y-%m-%d\t%H:%M:%S")
-    df_from_cli['x_labels'] = df_from_cli['measurement_time_str'] + "\n" + df_from_cli['desc']
-    df_from_cli['throughput'] = df_from_cli['bytes'].map(lambda byte_obj: pickle.loads(byte_obj))
+    df_from_cli['measurement_time_str'] = df_from_cli['measurement_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
+    df_from_cli['x_labels'] = df_from_cli['measurement_time_str'] + " " + df_from_cli['measurement_desc']
+    df_from_cli.rename(columns={'measurement_value' : 'throughput'}, inplace=True)
     df_from_cli.sort_values(by='measurement_time', inplace=True)
     fig = px.bar(df_from_cli, 
                  x='x_labels', y='throughput',
                  hover_data={'uuid': True,
-                             'type': True,
-                             'description': df_from_cli['desc'],
+                             'type': df_from_cli['measurement_type'],
+                             'description': df_from_cli['measurement_desc'],
                              'meta description' : df_from_cli['meta_desc'].replace('', 'None'),
-                             'meta start time' : df_from_cli['meta_start_time']},
+                             'meta start time' : df_from_cli['meta_start_time'].dt.strftime("%Y-%m-%d\t%H:%M:%S")},
                  color='throughput',
                  labels={'x_labels' : 'Measurement', 'throughput' : 'Throughput'}
     )
@@ -343,7 +363,7 @@ visualization_func_mapper = {
                 "energy": plot_energy,
                 "Multiclass Confusion Matrix": plot_confusion_matrix,
                 "Latency": plot_latency,
-                "throughput": plot_throughput_plotly,
+                "throughput": plot_throughput_matplotlib,
                 "hyperparameters" : plot_hyperparameters,
                 "confusion-matrix" : plot_confusion_matrix_plotly,
                 "loss" : plot_loss,
