@@ -81,7 +81,6 @@ class Metric:
     def log(self, benchmark):
         pass
 
-
 class TimeMetric(Metric):
     priority = 0
     measure_type = 'time'
@@ -95,41 +94,7 @@ class TimeMetric(Metric):
         self.data = after_time - self.before_time
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='s')
-
-
-class TimeVisualizer:
-    def __init__(self, serialized_bytes):
-        self.data = []
-        for values in serialized_bytes:
-            self.data.append(pickle.loads(values))
-
-    def visualize(self, uuid, description, starts):
-
-        for s in range(len(starts)):
-            starts[s] = starts[s].isoformat(' ', 'seconds')
-
-        dic = {"uuid": [uuid]}
-        dic[description] = self.data
-
-        df = pd.DataFrame(
-            dic,
-            index=starts
-        )
-
-        ax = df.plot.barh(stacked=False)
-        plt.title("Time spent in phases")
-        plt.xlabel("Time in seconds")
-
-        x_offset = 0
-        y_offset = 0.02
-        for p in ax.patches:
-            b = p.get_bbox()
-            val = "{:.2f}".format(b.x1 - b.x0)
-            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
-
-        plt.show()
-
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec')
 
 class MemoryMetric(Metric):
     priority = 3
@@ -158,40 +123,7 @@ class MemoryMetric(Metric):
         }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize())
-
-
-class MemoryVisualizer:
-    def __init__(self, serialized_bytes):
-        self.timestamps = []
-        self.measurements = []
-        for values in serialized_bytes:
-            deserialized = pickle.loads(values)
-            self.timestamps.append(deserialized["timestamps"])
-            self.measurements.append(deserialized["measurements"])
-
-    def visualize(self, uuid, description, starts):
-
-        fig = plt.figure(figsize=(12, 8))
-        ax = fig.add_subplot(111)
-
-        for run in range(len(self.timestamps)):
-            relative_timestamps = []
-            for timestamp in self.timestamps[run]:
-                difference = timestamp - self.timestamps[run][0]
-                relative_timestamps.append(difference.total_seconds())
-            ax.plot(relative_timestamps,
-                    self.measurements[run],
-                    label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
-
-        ax.set_ylabel("MB used")
-        ax.set_xlabel("Time in seconds")
-        plt.legend(loc=2)
-        plt.title("Memory usage")
-
-        ax.yaxis.set_major_locator(ticker.LinearLocator(12))
-        plt.show()
-
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit="MB")
 
 class EnergyMetric(Metric):
     priority = 1
@@ -209,40 +141,6 @@ class EnergyMetric(Metric):
 
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
-
-
-class EnergyVisualizer:
-    def __init__(self, serialized_bytes):
-        self.data = []
-        for values in serialized_bytes:
-            self.data.append(pickle.loads(values))
-
-    def visualize(self, uuid, description, starts):
-
-        for s in range(len(starts)):
-            starts[s] = starts[s].isoformat(' ', 'seconds')
-
-        dic = {"uuid": [uuid]}
-        dic[description] = self.data
-
-        df = pd.DataFrame(
-            dic,
-            index=starts
-        )
-
-        ax = df.plot.barh(stacked=False)
-        plt.title("Power used during run")
-        plt.xlabel("µJ used")
-
-        x_offset = 0
-        y_offset = 0.02
-        for p in ax.patches:
-            b = p.get_bbox()
-            val = "{:.2f}".format(b.x1 - b.x0)
-            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
-
-        plt.show()
-
 
 class PowerMetric(Metric):
     priority = 3
@@ -272,44 +170,12 @@ class PowerMetric(Metric):
     def after(self):
         self.data = {
             'timestamps' : self.timestamps,
-            'measurements' : self.measurements
+            'measurements' : self.measurements,
+            'interval' : self.interval
         }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize())
-
-
-class PowerVisualizer:
-    def __init__(self, serialized_bytes):
-        self.timestamps = []
-        self.measurements = []
-        for values in serialized_bytes:
-            deserialized = pickle.loads(values)
-            self.timestamps.append(deserialized["timestamps"])
-            self.measurements.append(deserialized["measurements"])
-
-    def visualize(self, uuid, description, starts):
-
-        fig = plt.figure(figsize=(12, 8))
-        ax = fig.add_subplot(111)
-
-        for run in range(len(self.timestamps)):
-            relative_timestamps = []
-            for timestamp in self.timestamps[run]:
-                difference = timestamp - self.timestamps[run][0]
-                relative_timestamps.append(difference.total_seconds())
-            ax.plot(relative_timestamps,
-                    self.measurements[run],
-                    label=("Run from " + str(starts[run].isoformat(' ', 'seconds'))))
-
-        ax.set_ylabel("Watt used")
-        ax.set_xlabel("Time in seconds")
-        plt.legend(loc=2)
-        plt.title("Power consumption")
-
-        ax.yaxis.set_major_locator(ticker.LinearLocator(12))
-        plt.show()
-
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
 
 class LatencyMetric(Metric):
     priority = 0
@@ -327,41 +193,7 @@ class LatencyMetric(Metric):
         self.num_entries = num_entries
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='entries/second')
-
-
-class LatencyVisualizer:
-    def __init__(self, serialized_bytes):
-        self.data = []
-        for values in serialized_bytes:
-            self.data.append(pickle.loads(values))
-
-    def visualize(self, uuid, description, starts):
-
-        for s in range(len(starts)):
-            starts[s] = starts[s].isoformat(' ', 'seconds')
-
-        dic = {"uuid": [uuid]}
-        dic[description] = self.data
-
-        df = pd.DataFrame(
-            dic,
-            index=starts
-        )
-
-        ax = df.plot.barh(stacked=False)
-        plt.title("Latency")
-        plt.xlabel("Entries per second")
-
-        x_offset = 0
-        y_offset = 0.02
-        for p in ax.patches:
-            b = p.get_bbox()
-            val = "{:.2f}".format(b.x1 - b.x0)
-            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
-
-        plt.show()
-
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Seconds/entry')
 
 class ThroughputMetric(Metric):
     priority = 0
@@ -379,37 +211,4 @@ class ThroughputMetric(Metric):
         self.num_entries = num_entries
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='seconds/entry')
-
-
-class ThroughputVisualizer:
-    def __init__(self, serialized_bytes):
-        self.data = []
-        for values in serialized_bytes:
-            self.data.append(pickle.loads(values))
-
-    def visualize(self, uuid, description, starts):
-
-        for s in range(len(starts)):
-            starts[s] = starts[s].isoformat(' ', 'seconds')
-
-        dic = {"uuid": [uuid]}
-        dic[description] = self.data
-
-        df = pd.DataFrame(
-            dic,
-            index=starts
-        )
-
-        ax = df.plot.barh(stacked=False)
-        plt.title("Throughput")
-        plt.xlabel("Seconds per entry")
-
-        x_offset = 0
-        y_offset = 0.02
-        for p in ax.patches:
-            b = p.get_bbox()
-            val = "{:.2f}".format(b.x1 - b.x0)
-            ax.annotate(val, ((b.x0 + b.x1) / 2 + x_offset, b.y1 + y_offset))
-
-        plt.show()
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second')

@@ -20,6 +20,7 @@ def get_args():
     parser.add_argument("-u", "--uuids", nargs="+", help="UUIDs of the benchmarks to visualize", required=False)
     parser.add_argument("-t", "--types", nargs="+", help="measurement types", required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help="descriptions", required=False)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib")
     
     return parser.parse_args()
 
@@ -136,14 +137,15 @@ def main():
                                      Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
     serialized_df = pd.DataFrame(serialized_query.all(), 
                                  columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
-    serialized_df['measurement_value'] = serialized_df['bytes'].map(pickle.loads)
+    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
     serialized_df.drop(columns=['bytes'], inplace=True)
     meas_df = meas_df.merge(serialized_df, on='id')
     meas_df = meas_df.merge(meta_df, on='uuid')
     
-    for meas_type, type_group in meas_df.groupby('measurement_type'):
-        visualization_func = visualization_func_mapper[meas_type]
-        visualization_func(type_group)
+    for meas_type, type_group_df in meas_df.groupby('measurement_type'):
+        type_group_df.index = range(len(type_group_df))
+        visualization_func = visualization_func_mapper[args.plotting_backend][meas_type]
+        visualization_func(type_group_df)
 
     session.close()
 

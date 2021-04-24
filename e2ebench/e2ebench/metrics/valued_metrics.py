@@ -14,6 +14,9 @@ class ConfusionMatrixTracker:
         self.benchmark = benchmark        
 
     def track(self, matrix, labels, description):
+        """
+        Pass an ndarray where axis 0 is predicted and axis 1 is actual.
+        """
         serialized = self.serialize(matrix, labels)
         self.benchmark.log(description, self.MEASURE_TYPE, serialized)
 
@@ -106,10 +109,10 @@ class TTATracker:
 
     def track(self, accuracies, description):
         serialized = self.serialize(accuracies)
-        self.benchmark.log(description, self.MEASURE_TYPE, serialized)
+        self.benchmark.log(description, self.MEASURE_TYPE, serialized, unit='accuracy')
 
     def serialize(self, accuracies):
-        return pickle.dumps({'accuracies': accuracies})
+        return pickle.dumps(accuracies)
 
 class TTAVisualizer:
     def __init__(self, serialized_bytes):
@@ -144,12 +147,12 @@ class LossTracker:
     def __init__(self, benchmark):
         self.benchmark = benchmark
 
-    def track(self, loss, description):
-        serialized = self.serialize(loss)
-        self.benchmark.log(description, self.MEASURE_TYPE, serialized)
+    def track(self, loss_values, description):
+        serialized = self.serialize(loss_values)
+        self.benchmark.log(description, self.MEASURE_TYPE, serialized, unit="loss")
 
-    def serialize(self, accuracies):
-        return pickle.dumps({'loss': accuracies})
+    def serialize(self, loss_values):
+        return pickle.dumps(loss_values)
 
 class LossVisualizer:
     def __init__(self, serialized_bytes):
