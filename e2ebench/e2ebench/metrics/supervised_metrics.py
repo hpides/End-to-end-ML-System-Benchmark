@@ -12,6 +12,17 @@ import matplotlib.ticker as ticker
 
 
 class BenchmarkSupervisor:
+    """A supervisor object managing all supervised metrics
+
+    This object should be used as a decorator.
+
+    Parameters
+    ----------
+    metrics: list of Metric
+        A list of metrics to be collected while running the decorated function
+    benchmark: Benchmark
+        The central benchmark object used in the pipeline
+    """
     def __init__(self, metrics, benchmark):
         self.metrics = sorted(metrics)
         self.benchmark = benchmark
@@ -57,6 +68,7 @@ class BenchmarkSupervisor:
 
 
 class Metric:
+    """The Metric object from which all supervised metric objects inherit"""
     priority = 0
     needs_threading = False
 
@@ -81,7 +93,15 @@ class Metric:
     def log(self, benchmark):
         pass
 
+
 class TimeMetric(Metric):
+    """The metric object to measure the time taken for the execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    """
     priority = 0
     measure_type = 'time'
     needs_threading = False
@@ -96,7 +116,17 @@ class TimeMetric(Metric):
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec')
 
+
 class MemoryMetric(Metric):
+    """The metric object to measure memory used in the execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between memory measurements
+    """
     priority = 3
     measure_type = 'memory'
     needs_threading = True
@@ -118,14 +148,22 @@ class MemoryMetric(Metric):
 
     def after(self):
         self.data = {
-            'timestamps' : self.timestamps,
-            'measurements' : self.measurements
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
         }
 
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit="MB")
 
+
 class EnergyMetric(Metric):
+    """The metric object to measure energy used in the execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    """
     priority = 1
     measure_type = 'energy'
     needs_threading = False
@@ -142,7 +180,17 @@ class EnergyMetric(Metric):
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
 
+
 class PowerMetric(Metric):
+    """The metric object to measure power used in the execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between memory measurements
+    """
     priority = 3
     measure_type = 'power'
     needs_threading = True
@@ -177,7 +225,17 @@ class PowerMetric(Metric):
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
 
+
 class LatencyMetric(Metric):
+    """The metric object to measure latency of the pipeline function
+
+    To pass the number of data points processed, use method `track()`
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    """
     priority = 0
     measure_type = 'latency'
     needs_threading = False
@@ -190,12 +248,29 @@ class LatencyMetric(Metric):
         self.data = self.num_entries / (after_time - self.before_time)
 
     def track(self, num_entries):
+        """Sets the number of data points used to calculate latency by this object
+
+        Parameters
+        ----------
+        num_entries: int
+            the number of data points on which latency calculations are based
+        """
         self.num_entries = num_entries
 
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='Seconds/entry')
 
+
 class ThroughputMetric(Metric):
+    """The metric object to measure throughput of the pipeline function
+
+    To pass the number of data points processed, use method `track()`
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    """
     priority = 0
     measure_type = 'throughput'
     needs_threading = False
@@ -208,6 +283,13 @@ class ThroughputMetric(Metric):
         self.data = (after_time - self.before_time) / self.num_entries
 
     def track(self, num_entries):
+        """Sets the number of data points used to calculate throughput by this object
+
+        Parameters
+        ----------
+        num_entries: int
+            the number of data points on which throughput calculations are based
+        """
         self.num_entries = num_entries
 
     def log(self, benchmark):
