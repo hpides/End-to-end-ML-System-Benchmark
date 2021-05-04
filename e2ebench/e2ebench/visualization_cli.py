@@ -1,3 +1,14 @@
+"""e2ebench CLI for visualizing metrics
+
+The visualization frontend of e2ebench.
+Given a database file as created by an e2ebench.Benchmark object,
+this tool gives a selection of available metrics and helps users choose a subset to visualize.
+Users can select metrics in two ways:
+    1. by using command line arguments (see e2ebench-cli -h)
+    2. If no arguments are provided, e2ebench-cli will prompt the user for arguments.
+All metrics of the same measurement type are then visualized in a single diagram.
+"""
+
 import argparse
 from itertools import chain
 import pickle
@@ -13,12 +24,23 @@ from e2ebench.datamodel import Measurement, BenchmarkMetadata
 from e2ebench.visualization import visualization_func_mapper
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Visualization CLI for End to End ML System Benchmark")
-    parser.add_argument("file", help="Sqlite Database file created by the benchmark package")
-    parser.add_argument("-u", "--uuids", nargs="+", help="UUIDs of the benchmarks to visualize", required=False)
-    parser.add_argument("-t", "--types", nargs="+", help="measurement types", required=False)
-    parser.add_argument("-d", "--descriptions", nargs="+", help="descriptions", required=False)
-    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib")
+    module_help = "Visualization CLI for End to End ML System Benchmark"
+    uuid_help = "UUUIDs of the runs to visualize. Each uuid corresponds to one pipeline run. " + \
+                "For humans uuids are usually tedious to handle. Leave this parameter out to be shown a list of available uuids to choose from."
+    type_help = "Measurement types of the metrics to visualize. Each metric that e2ebench supports has a descriptive type. " + \
+                "Like the uuids, this parameter is optional and can be choosen by prompt."
+    description_help = "Descriptions are supplied by users during the implementation stage of a pipeline. " + \
+                       "They help giving descriptive information about captured metrics. " + \
+                       "This parameter is optional and can be choosen via prompt later."
+    plotting_backend_help = "Plotting backend used for visualization. The default is matplotlib."
+
+
+    parser = argparse.ArgumentParser(description=module_help)
+    parser.add_argument("file", help="Sqlite Database file as created by an e2ebench.Benchmark object")
+    parser.add_argument("-u", "--uuids", nargs="+", help=uuid_help, required=False)
+    parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
+    parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib", help=plotting_backend_help)
     
     return parser.parse_args()
 
