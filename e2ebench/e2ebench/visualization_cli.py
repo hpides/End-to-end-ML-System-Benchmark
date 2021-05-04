@@ -16,12 +16,13 @@ import os
 import sys
 
 import pandas as pd
+import matplotlib.pyplot as plt
 from PyInquirer import prompt, Separator
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 
 from e2ebench.datamodel import Measurement, BenchmarkMetadata
-from e2ebench.visualization import visualization_func_mapper
+from e2ebench.visualization import type_to_visualizer_class_mapper
 
 def get_args():
     file_help = "Sqlite Database file as created by an e2ebench.Benchmark object"
@@ -169,10 +170,23 @@ def main():
     
     df = join_remaining_columns(meas_df, meta_df, session)
     
+    figs = []
+
     for meas_type, type_group_df in df.groupby('measurement_type'):
-        type_group_df.index = range(len(type_group_df))
-        visualization_func = visualization_func_mapper[args.plotting_backend][meas_type]
-        visualization_func(type_group_df)
+        #type_group_df.index = range(len(type_group_df))
+        VisualizerClass = type_to_visualizer_class_mapper[meas_type]
+        visualizer = VisualizerClass(type_group_df, args.plotting_backend)
+        figs.append(visualizer.plot())
+
+        # Needs to be flattened since visualizers can either return a figure or a list of figures
+    figs = list(chain(*figs))
+
+    if args.plotting_backend == 'matplotlib':
+        plt.show()
+    if args.plotting_backend == 'plotly':
+        for fig in figs:
+            fig.show()
+
 
     session.close()
 
