@@ -24,6 +24,7 @@ from e2ebench.datamodel import Measurement, BenchmarkMetadata
 from e2ebench.visualization import visualization_func_mapper
 
 def get_args():
+    file_help = "Sqlite Database file as created by an e2ebench.Benchmark object"
     module_help = "Visualization CLI for End to End ML System Benchmark"
     uuid_help = "UUUIDs of the runs to visualize. Each uuid corresponds to one pipeline run. " + \
                 "For humans uuids are usually tedious to handle. Leave this parameter out to be shown a list of available uuids to choose from."
@@ -36,7 +37,7 @@ def get_args():
 
 
     parser = argparse.ArgumentParser(description=module_help)
-    parser.add_argument("file", help="Sqlite Database file as created by an e2ebench.Benchmark object")
+    parser.add_argument("file", help=file_help)
     parser.add_argument("-u", "--uuids", nargs="+", help=uuid_help, required=False)
     parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
