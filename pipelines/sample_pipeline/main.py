@@ -15,7 +15,7 @@ from e2ebench import Benchmark,\
                      TTATracker,\
                      LossTracker
 
-bm = Benchmark('sample_db_file.db')
+bm = Benchmark('sample_db_file.db', description="le description")
 
 tpm = ThroughputMetric('bloat throughput')
 ltm = LatencyMetric('bloat latency')

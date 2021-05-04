@@ -112,6 +112,21 @@ def prompt_for_description(meas_df):
     
     return meas_df
 
+def join_remaining_columns(meas_df, meta_df, session):
+    serialized_query = session.query(Measurement.id, 
+                                     Measurement.datetime,
+                                     Measurement.value,
+                                     Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
+    serialized_df = pd.DataFrame(serialized_query.all(), 
+                                 columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
+    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
+    serialized_df.drop(columns=['bytes'], inplace=True)
+    meas_df = meas_df.merge(serialized_df, on='id')
+    meas_df = meas_df.merge(meta_df, on='uuid')
+
+    return meas_df
+
+
 def main():
     args = get_args()
 
@@ -129,18 +144,9 @@ def main():
     if args.descriptions is None:
         meas_df = prompt_for_description(meas_df)
     
-    serialized_query = session.query(Measurement.id, 
-                                     Measurement.datetime,
-                                     Measurement.value,
-                                     Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
-    serialized_df = pd.DataFrame(serialized_query.all(), 
-                                 columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
-    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
-    serialized_df.drop(columns=['bytes'], inplace=True)
-    meas_df = meas_df.merge(serialized_df, on='id')
-    meas_df = meas_df.merge(meta_df, on='uuid')
+    df = join_remaining_columns(meas_df, meta_df, session)
     
-    for meas_type, type_group_df in meas_df.groupby('measurement_type'):
+    for meas_type, type_group_df in df.groupby('measurement_type'):
         type_group_df.index = range(len(type_group_df))
         visualization_func = visualization_func_mapper[args.plotting_backend][meas_type]
         visualization_func(type_group_df)
