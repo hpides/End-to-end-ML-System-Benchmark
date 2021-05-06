@@ -9,15 +9,43 @@ from time import sleep
 
 
 class Benchmark:
+    """A class, that manages the database entries for the measured metrics which are logged into the database.
+
+    Attributes
+    ----------
+    db_file : str
+        The database file where the metrics should be stored. The mode of db_file is 'append'.
+    description : str, optional
+        The description of the whole pipeline use case. Even though the description is optional, it should be set
+        so the database entries are distinguishable without evaluating the uuid's.
+    description : str
+        The description of the metric.
+    measure_type : str
+        The measurement type of the metric.
+    value : :obj:'bytes'
+        The bytes object of the data which should be logged.
+    unit : str
+        The unit of the measured values.
+
+    Methods
+    -------
+    close
+        The function that sets the close event and joins the results of the threads.
+    __database_thread_func
+        The function that manages the threading.
+    log(description, measure_type, value, unit='')
+        Logging of measured metrics into the database.
+    """
     def __init__(self, db_file, description=""):
         """ Initialisation of the benchmark object.
 
         Parameters
         ----------
         db_file : str
-            The database file where the metrics should be stored.
-        description : str
-            The description of the whole pipeline use case.
+            The database file where the metrics should be stored. The mode of db_file is 'append'.
+        description : str, optional
+            The description of the whole pipeline use case. Even though the description is optional, it should be set
+            so the database entries are distinguishable without evaluating the uuid's.
         """
         self.db_file = db_file
         self.close_event = Event()
@@ -59,7 +87,7 @@ class Benchmark:
             session.close()
 
     def log(self, description, measure_type, value, unit=''):
-        """ Logging of measured metrics into the database.
+        """Logging of measured metrics into the database.
 
         Parameters
         ----------
