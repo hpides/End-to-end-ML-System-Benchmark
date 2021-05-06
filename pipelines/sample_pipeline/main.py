@@ -17,21 +17,25 @@ from e2ebench import Benchmark,\
 
 bm = Benchmark('sample_db_file.db')
 
-tpm = ThroughputMetric('bloat throughput')
-ltm = LatencyMetric('bloat latency')
-@BenchmarkSupervisor([TimeMetric('bloat time'),
-                      MemoryMetric('bloat memory', interval=0.1),
-                      PowerMetric('bloat power'),
-                      EnergyMetric('bloat energy'),
-                      tpm, ltm], bm)
+bloat_metrics = {
+    "throughput": ThroughputMetric('bloat throughput'),
+    "latency": LatencyMetric('bloat latency'),
+    "time": TimeMetric('bloat time'),
+    "memory": MemoryMetric('bloat memory', interval=0.1),
+    "power": PowerMetric('bloat power'),
+    "energy": EnergyMetric('bloat energy'),
+}
+
+
+@BenchmarkSupervisor(bloat_metrics.values(), bm)
 def bloat():
     a = []
     for i in range(1, 2):
         a.append(np.random.randn(*([10] * i)))
         time.sleep(5)
     print(a)
-    tpm.track(420)
-    ltm.track(69)
+    bloat_metrics["throughput"].track(420)
+    bloat_metrics["latency"].track(69)
 
 
 def main():
