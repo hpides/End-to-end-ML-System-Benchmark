@@ -8,7 +8,7 @@ from benchmarking import bm
 import e2ebench as eb
 
 
-@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time'), eb.PowerMetric('test power')], bm)
+@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time')], bm)
 def test(model):
     cmt = eb.ConfusionMatrixTracker(bm)
 

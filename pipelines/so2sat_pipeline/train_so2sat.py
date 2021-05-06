@@ -8,7 +8,7 @@ import e2ebench as eb
 from benchmarking import bm
 
 
-@eb.BenchmarkSupervisor([eb.MemoryMetric('train memory'), eb.TimeMetric('train time'), eb.PowerMetric('train power')], bm)
+@eb.BenchmarkSupervisor([eb.MemoryMetric('train memory'), eb.TimeMetric('train time')], bm)
 def train():
 
     # Model configuration
