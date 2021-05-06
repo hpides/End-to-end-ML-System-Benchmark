@@ -8,12 +8,12 @@ from e2ebench import Benchmark,\
                      BenchmarkSupervisor,\
                      TimeMetric,\
                      MemoryMetric,\
-                     PowerMetric,\
-                     EnergyMetric,\
                      ThroughputMetric,\
                      LatencyMetric,\
                      TTATracker,\
-                     LossTracker
+                     LossTracker# ,\
+                     # PowerMetric,\
+                     # EnergyMetric
 
 bm = Benchmark('sample_db_file.db', description="le description")
 
@@ -22,8 +22,8 @@ bloat_metrics = {
     "latency": LatencyMetric('bloat latency'),
     "time": TimeMetric('bloat time'),
     "memory": MemoryMetric('bloat memory', interval=0.1),
-    "power": PowerMetric('bloat power'),
-    "energy": EnergyMetric('bloat energy'),
+    # "power": PowerMetric('bloat power'),
+    # "energy": EnergyMetric('bloat energy'),
 }
 
 

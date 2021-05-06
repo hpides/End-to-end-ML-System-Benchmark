@@ -5,7 +5,7 @@ import pickle
 import psutil
 import threading
 import time
-import pyRAPL
+# import pyRAPL
 import pandas as pd
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -156,74 +156,74 @@ class MemoryMetric(Metric):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit="MB")
 
 
-class EnergyMetric(Metric):
-    """The metric object to measure energy used in the execution
+# class EnergyMetric(Metric):
+#     """The metric object to measure energy used in the execution
+#
+#     Parameters
+#     ----------
+#     description: str
+#         The description of this metric and function which is added to the database
+#     """
+#     priority = 1
+#     measure_type = 'energy'
+#     needs_threading = False
+#
+#     def before(self):
+#         pyRAPL.setup()
+#         self.meter = pyRAPL.Measurement('bar')
+#         self.meter.begin()
+#
+#     def after(self):
+#         self.meter.end()
+#         self.data = sum(self.meter.result.pkg)
+#
+#     def log(self, benchmark):
+#         benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
 
-    Parameters
-    ----------
-    description: str
-        The description of this metric and function which is added to the database
-    """
-    priority = 1
-    measure_type = 'energy'
-    needs_threading = False
 
-    def before(self):
-        pyRAPL.setup()
-        self.meter = pyRAPL.Measurement('bar')
-        self.meter.begin()
-
-    def after(self):
-        self.meter.end()
-        self.data = sum(self.meter.result.pkg)
-
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
-
-
-class PowerMetric(Metric):
-    """The metric object to measure power used in the execution
-
-    Parameters
-    ----------
-    description: str
-        The description of this metric and function which is added to the database
-    interval: int, default=1
-        The number of seconds between memory measurements
-    """
-    priority = 3
-    measure_type = 'power'
-    needs_threading = True
-
-    def __init__(self, description, interval=1):
-        super().__init__(description)
-        self.interval = interval
-        self.meter = None
-
-    def before(self):
-        pyRAPL.setup()
-        self.meter = pyRAPL.Measurement('bar')
-        self.measurements = []
-        self.timestamps = []
-
-    def meanwhile(self, finish_event):
-        while not finish_event.isSet():
-            self.meter.begin()
-            time.sleep(self.interval)
-            self.meter.end()
-            power = sum(map(lambda x: x / self.meter.result.duration, self.meter.result.pkg))
-            self.measurements.append(power)
-            self.timestamps.append(datetime.now())
-
-    def after(self):
-        self.data = {
-            'timestamps' : self.timestamps,
-            'measurements' : self.measurements,
-            'interval' : self.interval
-        }
-
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
+# class PowerMetric(Metric):
+#     """The metric object to measure power used in the execution
+#
+#     Parameters
+#     ----------
+#     description: str
+#         The description of this metric and function which is added to the database
+#     interval: int, default=1
+#         The number of seconds between memory measurements
+#     """
+#     priority = 3
+#     measure_type = 'power'
+#     needs_threading = True
+#
+#     def __init__(self, description, interval=1):
+#         super().__init__(description)
+#         self.interval = interval
+#         self.meter = None
+#
+#     def before(self):
+#         pyRAPL.setup()
+#         self.meter = pyRAPL.Measurement('bar')
+#         self.measurements = []
+#         self.timestamps = []
+#
+#     def meanwhile(self, finish_event):
+#         while not finish_event.isSet():
+#             self.meter.begin()
+#             time.sleep(self.interval)
+#             self.meter.end()
+#             power = sum(map(lambda x: x / self.meter.result.duration, self.meter.result.pkg))
+#             self.measurements.append(power)
+#             self.timestamps.append(datetime.now())
+#
+#     def after(self):
+#         self.data = {
+#             'timestamps' : self.timestamps,
+#             'measurements' : self.measurements,
+#             'interval' : self.interval
+#         }
+#
+#     def log(self, benchmark):
+#         benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
 
 
 class LatencyMetric(Metric):
