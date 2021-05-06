@@ -5,7 +5,7 @@ from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker, \
 from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor,\
                                                 TimeMetric,\
                                                 MemoryMetric,\
-                                                PowerMetric,\
-                                                EnergyMetric,\
                                                 LatencyMetric,\
-                                                ThroughputMetric
+                                                ThroughputMetric # ,\
+                                                # PowerMetric,\
+                                                # EnergyMetric,\
