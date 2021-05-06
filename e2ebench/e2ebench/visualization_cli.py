@@ -1,3 +1,14 @@
+"""e2ebench CLI for visualizing metrics
+
+The visualization frontend of e2ebench.
+Given a database file as created by an e2ebench.Benchmark object,
+this tool gives a selection of available metrics and helps users choose a subset to visualize.
+Users can select metrics in two ways:
+    1. by using command line arguments (see e2ebench-cli -h)
+    2. If no arguments are provided, e2ebench-cli will prompt the user for arguments.
+All metrics of the same measurement type are then visualized in a single diagram.
+"""
+
 import argparse
 from itertools import chain
 import pickle
@@ -5,20 +16,33 @@ import os
 import sys
 
 import pandas as pd
+import matplotlib.pyplot as plt
 from PyInquirer import prompt, Separator
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 
 from e2ebench.datamodel import Measurement, BenchmarkMetadata
-from e2ebench.visualization import visualization_func_mapper
+from e2ebench.visualization import type_to_visualizer_class_mapper
 
 def get_args():
-    parser = argparse.ArgumentParser(description="Visualization CLI for End to End ML System Benchmark")
-    parser.add_argument("file", help="Sqlite Database file created by the benchmark package")
-    parser.add_argument("-u", "--uuids", nargs="+", help="UUIDs of the benchmarks to visualize", required=False)
-    parser.add_argument("-t", "--types", nargs="+", help="measurement types", required=False)
-    parser.add_argument("-d", "--descriptions", nargs="+", help="descriptions", required=False)
-    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib")
+    file_help = "Sqlite Database file as created by an e2ebench.Benchmark object"
+    module_help = "Visualization CLI for End to End ML System Benchmark"
+    uuid_help = "UUUIDs of the runs to visualize. Each uuid corresponds to one pipeline run. " + \
+                "For humans uuids are usually tedious to handle. Leave this parameter out to be shown a list of available uuids to choose from."
+    type_help = "Measurement types of the metrics to visualize. Each metric that e2ebench supports has a descriptive type. " + \
+                "Like the uuids, this parameter is optional and can be choosen by prompt."
+    description_help = "Descriptions are supplied by users during the implementation stage of a pipeline. " + \
+                       "They help giving descriptive information about captured metrics. " + \
+                       "This parameter is optional and can be choosen via prompt later."
+    plotting_backend_help = "Plotting backend used for visualization. The default is matplotlib."
+
+
+    parser = argparse.ArgumentParser(description=module_help)
+    parser.add_argument("file", help=file_help)
+    parser.add_argument("-u", "--uuids", nargs="+", help=uuid_help, required=False)
+    parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
+    parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib", help=plotting_backend_help)
     
     return parser.parse_args()
 
@@ -112,6 +136,21 @@ def prompt_for_description(meas_df):
     
     return meas_df
 
+def join_remaining_columns(meas_df, meta_df, session):
+    serialized_query = session.query(Measurement.id, 
+                                     Measurement.datetime,
+                                     Measurement.value,
+                                     Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
+    serialized_df = pd.DataFrame(serialized_query.all(), 
+                                 columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
+    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
+    serialized_df.drop(columns=['bytes'], inplace=True)
+    meas_df = meas_df.merge(serialized_df, on='id')
+    meas_df = meas_df.merge(meta_df, on='uuid')
+
+    return meas_df
+
+
 def main():
     args = get_args()
 
@@ -129,21 +168,25 @@ def main():
     if args.descriptions is None:
         meas_df = prompt_for_description(meas_df)
     
-    serialized_query = session.query(Measurement.id, 
-                                     Measurement.datetime,
-                                     Measurement.value,
-                                     Measurement.unit).filter(Measurement.id.in_(meas_df['id']))
-    serialized_df = pd.DataFrame(serialized_query.all(), 
-                                 columns=['id', 'measurement_time', 'bytes', 'measurement_unit'])
-    serialized_df['measurement_data'] = serialized_df['bytes'].map(pickle.loads)
-    serialized_df.drop(columns=['bytes'], inplace=True)
-    meas_df = meas_df.merge(serialized_df, on='id')
-    meas_df = meas_df.merge(meta_df, on='uuid')
+    df = join_remaining_columns(meas_df, meta_df, session)
     
-    for meas_type, type_group_df in meas_df.groupby('measurement_type'):
-        type_group_df.index = range(len(type_group_df))
-        visualization_func = visualization_func_mapper[args.plotting_backend][meas_type]
-        visualization_func(type_group_df)
+    figs = []
+
+    for meas_type, type_group_df in df.groupby('measurement_type'):
+        #type_group_df.index = range(len(type_group_df))
+        VisualizerClass = type_to_visualizer_class_mapper[meas_type]
+        visualizer = VisualizerClass(type_group_df, args.plotting_backend)
+        figs.append(visualizer.plot())
+
+        # Needs to be flattened since visualizers can either return a figure or a list of figures
+    figs = list(chain(*figs))
+
+    if args.plotting_backend == 'matplotlib':
+        plt.show()
+    if args.plotting_backend == 'plotly':
+        for fig in figs:
+            fig.show()
+
 
     session.close()
 

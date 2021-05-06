@@ -10,6 +10,15 @@ from time import sleep
 
 class Benchmark:
     def __init__(self, db_file, description=""):
+        """ Initialisation of the benchmark object.
+
+        Parameters
+        ----------
+        db_file : str
+            The database file where the metrics should be stored.
+        description : str
+            The description of the whole pipeline use case.
+        """
         self.db_file = db_file
         self.close_event = Event()
         self.uuid = str(uuid4())
@@ -20,10 +29,12 @@ class Benchmark:
         self.__db_thread.start()
 
     def close(self):
+        """The function that sets the close event and joins the results of the threads."""
         self.close_event.set()
         self.__db_thread.join()
 
     def __database_thread_func(self):
+        """The function that manages the threading."""
         engine = create_engine('sqlite+pysqlite:///' + self.db_file)
         Base.metadata.create_all(engine)
         Session = sessionmaker(bind=engine)
@@ -48,6 +59,24 @@ class Benchmark:
             session.close()
 
     def log(self, description, measure_type, value, unit=''):
+        """ Logging of measured metrics into the database.
+
+        Parameters
+        ----------
+        description : str
+            The description of the metric.
+        measure_type : str
+            The measurement type of the metric.
+        value : :obj:'bytes'
+            The bytes object of the data which should be logged.
+        unit : str
+            The unit of the measured values.
+
+        Returns
+        -------
+        Measurement
+            Measurement object with updated datetime, benchmark_uuid, description, measurement_type, value and unit.
+        """
         measurement = Measurement(datetime=datetime.now(),
                                   benchmark_uuid=self.uuid,
                                   description=description,
