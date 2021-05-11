@@ -1,5 +1,6 @@
 from datetime import datetime
 import os
+import pickle
 from queue import Queue
 from threading import Thread, Event
 from time import sleep
@@ -128,16 +129,46 @@ class VisualizationBenchmark(Benchmark):
     def __init__(self, db_file):
         super().__init__(db_file, mode='r')
 
-    def query_all_uuid_type_desc(self):       
-        query_result = self.query(Measurement.id,
-                                  Measurement.uuid,
-                                  Measurement.measurement_type,
-                                  Measurement.measurement_description)
-        col_names = [col_desc['name'] for col_desc in query_result.column_descriptions]
+    def query_all_meta(self):
+        """
+        Returns a dataframe of all entries in BenchmarkMetadata and sets uuid as the index.
+        """
+        query = self.query(BenchmarkMetadata.uuid,
+                           BenchmarkMetadata.meta_description,
+                           BenchmarkMetadata.meta_start_time)
+        col_names = [col_desc['name'] for col_desc in query.column_descriptions]
+
+        return pd.DataFrame(query.all(), columns=col_names).set_index('uuid')
+
+    def query_all_uuid_type_desc(self):
+        """
+        Returns a dataframe of all entries in Measurement and sets Measurement.id as the index.
+        """      
+        query = self.query(Measurement.id,
+                           Measurement.uuid,
+                           Measurement.measurement_type,
+                           Measurement.measurement_description)
+        col_names = [col_desc['name'] for col_desc in query.column_descriptions]
         
-        return pd.DataFrame(query_result, columns=col_names).set_index('id')
+        return pd.DataFrame(query.all(), columns=col_names).set_index('id')
 
     def join_visualization_queries(self, uuid_type_desc_df):
+        """
+        Joins all remaining database columns from both tables to uuid_type_desc_df.
+
+        Parameters
+        ----------
+        uuid_type_desc_df : pandas.DataFrame
+            Dataframe containing the columns uuid, measurement_type, measurement_description
+            and Measurement.id as the index
+            (same schema as returned by VisualizationBenchmark.query_all_uuid_type_desc()).
+
+        Returns
+        -------
+        joined_df : pandas.DataFrame
+            uuid_type_desc_df joined with the remaining database columns from both tables.
+            Measurement.id is still the index in joined_df.
+        """
         meta_query = self.query(BenchmarkMetadata.uuid,
                                 BenchmarkMetadata.meta_start_time,
                                 BenchmarkMetadata.meta_description).filter(
@@ -152,6 +183,7 @@ class VisualizationBenchmark(Benchmark):
                                             Measurement.id.in_(uuid_type_desc_df.index))
         measure_col_names = [col_desc['name'] for col_desc in measurement_query.column_descriptions]
         measurement_df = pd.DataFrame(measurement_query.all(), columns=measure_col_names)
+        measurement_df['measurement_data'] = measurement_df['measurement_data'].map(pickle.loads)
 
         joined_df = uuid_type_desc_df.reset_index().merge(meta_df, on='uuid')
         joined_df = joined_df.merge(measurement_df, on='id')
