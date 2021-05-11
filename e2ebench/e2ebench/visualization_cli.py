@@ -60,12 +60,12 @@ def create_dfs(session):
     return meas_df, meta_df
 
 def filter_by_args(meas_df, meta_df, args):
-    if args.uuids:
-        meas_df = meas_df[meas_df['uuid'].isin([args.uuids])]
-        meta_df = meta_df[meta_df['uuid'].isin([args.uuids])]
-    if args.types:
+    if args.uuids is not None:
+        meas_df = meas_df[meas_df['uuid'].isin(args.uuids)]
+        meta_df = meta_df[meta_df['uuid'].isin(args.uuids)]
+    if args.types is not None:
         meas_df = meas_df[meas_df['measurement_type'].isin([args.types])]
-    if args.descriptions:
+    if args.descriptions is not None:
         meas_df = meas_df[meas_df['measurement_desc'].isin([args.descriptions])]
 
     if meas_df.empty:

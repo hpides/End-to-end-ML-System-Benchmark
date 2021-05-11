@@ -8,16 +8,16 @@ class Measurement(Base):
     __tablename__ = 'measurement'
 
     id = Column(Integer, primary_key=True)
-    benchmark_uuid = Column(String, ForeignKey('benchmark_metadata.uuid'))
-    datetime = Column(DateTime)
-    description = Column(String, nullable=False)
+    uuid = Column(String, ForeignKey('benchmark_metadata.uuid'))
+    measurement_datetime = Column(DateTime)
+    measurement_description = Column(String, nullable=False)
     measurement_type = Column(String)
-    value = Column(LargeBinary, nullable=False)
-    unit = Column(String)
+    measurement_data = Column(LargeBinary, nullable=False)
+    measurement_unit = Column(String)
 
 
 class BenchmarkMetadata(Base):
     __tablename__ = 'benchmark_metadata'
     uuid = Column(String, primary_key=True)
-    description = Column(String)
-    start_time = Column(DateTime)
+    meta_description = Column(String)
+    meta_start_time = Column(DateTime)
