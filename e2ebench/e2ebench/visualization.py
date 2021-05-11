@@ -80,7 +80,7 @@ class ConfusionMatrixVisualizer(Visualizer):
             conf_mat_np = row['measurement_data']['matrix']
             labels = row['measurement_data']['labels']
             layout = {
-                'title' : f"Confusion matrix for measurement {row['uuid']} \"{row['measurement_desc']}\"",
+                'title' : f"Confusion matrix for measurement {row['uuid']} \"{row['measurement_description']}\"",
                 'xaxis' : {'title' : 'actual'},
                 'yaxis' : {'title' : 'predicted'}
             }
@@ -111,8 +111,8 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
             relative_timestamps = timestamps - timestamps[0]
             measurements = measurement_dict.pop('measurements')
-            measurement_time = row['measurement_time'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_desc'] + "\"\nfrom\n" + measurement_time
+            measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
+            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
             
             ax.plot(relative_timestamps, measurements, label=linelabel)
         
@@ -132,8 +132,8 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
             relative_timestamps = timestamps - timestamps[0]
             measurements = measurement_dict.pop('measurements')
-            measurement_time = row['measurement_time'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_desc'] + "\"\nfrom\n" + measurement_time
+            measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
+            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
             
             fig.add_trace(go.Scatter(
                 x=relative_timestamps, y=measurements,
@@ -162,8 +162,8 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
         for _, row in self.df.iterrows():
             measurements = row['measurement_data']
             epoch_ids = np.arange(1, len(measurements) + 1)
-            measurement_time = row['measurement_time'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_desc'] + "\"\nfrom\n" + measurement_time
+            measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
+            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
             
             ax.plot(epoch_ids, measurements, label=linelabel)
         
@@ -180,8 +180,8 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
         for _, row in self.df.iterrows():
             measurements = row['measurement_data']
             epoch_ids = np.arange(1, len(measurements) + 1)
-            measurement_time = row['measurement_time'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_desc'] + "\"\nfrom\n" + measurement_time
+            measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
+            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
 
             fig.add_trace(go.Scatter(
                 x=epoch_ids, y=measurements,
@@ -200,9 +200,9 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
 class BarVisualizer(Visualizer):
     def __init__(self, df_from_cli, plotting_backend):
         super().__init__(df_from_cli, plotting_backend)
-        df_from_cli['measurement_time_str'] = df_from_cli['measurement_time'].dt.strftime("%Y-%m-%d %H:%M:%S")
-        df_from_cli['x_labels'] = " \"" + df_from_cli['measurement_desc'] + "\"\nfrom\n" + df_from_cli['measurement_time_str']
-        df_from_cli.sort_values(by='measurement_time', inplace=True)
+        df_from_cli['measurement_time_str'] = df_from_cli['measurement_datetime'].dt.strftime("%Y-%m-%d %H:%M:%S")
+        df_from_cli['x_labels'] = " \"" + df_from_cli['measurement_description'] + "\"\nfrom\n" + df_from_cli['measurement_time_str']
+        df_from_cli.sort_values(by='measurement_datetime', inplace=True)
         self.df = df_from_cli
     
     def plot_with_matplotlib(self):
@@ -228,8 +228,8 @@ class BarVisualizer(Visualizer):
         fig = px.bar(self.df, 
                     x='x_labels', y='measurement_data',
                     hover_data={'uuid': True,
-                                'description': self.df['measurement_desc'],
-                                'meta description' : self.df['meta_desc'].replace('', 'None'),
+                                'description': self.df['measurement_description'],
+                                'meta description' : self.df['meta_description'].replace('', 'None'),
                                 'meta start time' : self.df['meta_start_time'].dt.strftime("%Y-%m-%d %H:%M:%S")},
                     color='measurement_data',
         )
