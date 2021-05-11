@@ -76,46 +76,12 @@ class Benchmark:
 
             self.__db_thread = Thread(target=self.__database_thread_func)
             self.__db_thread.start()
-        
 
-    def query(self, entities, filters=[], return_pandas=True):
+    def query(self, *args, **kwargs):
         if self.mode != "r":
             raise Exception("Invalid file mode. Mode must be \"r\" to send queries.")
 
-        query = self.session.query(*entities).filter(*filters)
-        col_names = [col['name'] for col in query.column_descriptions]
-        query_result = query.all()
-
-        if return_pandas:
-            query_result = pd.DataFrame(query_result, columns = col_names)
-
-        return query_result
-
-    def query_all_uuid_type_desc(self):       
-        df =  self.query([Measurement.id,
-                          Measurement.uuid,
-                          Measurement.measurement_type,
-                          Measurement.measurement_description])
-        df.set_index('id', inplace=True)
-
-        return df
-
-    def join_visualization_queries(self, uuid_type_desc_df):
-        meta_df = self.query([BenchmarkMetadata.uuid,
-                              BenchmarkMetadata.meta_start_time,
-                              BenchmarkMetadata.meta_description],
-                              filters=[BenchmarkMetadata.uuid.in_(uuid_type_desc_df['uuid'])])
-
-        measurement_df = self.query([Measurement.id,
-                                     Measurement.measurement_datetime,
-                                     Measurement.measurement_data,
-                                     Measurement.measurement_unit],
-                                    filters=[Measurement.id.in_(uuid_type_desc_df.index)])
-
-        df = uuid_type_desc_df.reset_index().merge(meta_df, on='uuid')
-        df = df.merge(measurement_df, on='id')
-
-        return df.set_index('id')
+        return self.session.query(*args, **kwargs)
 
     def close(self):
         """The function that sets the close event and joins the results of the threads."""
@@ -179,3 +145,38 @@ class Benchmark:
                                   measurement_unit=unit)
         self.queue.put(measurement)
 
+
+class VisualizationBenchmark(Benchmark):
+    def __init__(self, db_file):
+        super().__init__(db_file, mode='r')
+
+
+    def query_all_uuid_type_desc(self):       
+        query_result = self.query(Measurement.id,
+                                  Measurement.uuid,
+                                  Measurement.measurement_type,
+                                  Measurement.measurement_description)
+        col_names = [col_desc['name'] for col_desc in query_result.column_descriptions]
+        
+        return pd.DataFrame(query_result, columns=col_names).set_index('id')
+
+    def join_visualization_queries(self, uuid_type_desc_df):
+        meta_query = self.query(BenchmarkMetadata.uuid,
+                                BenchmarkMetadata.meta_start_time,
+                                BenchmarkMetadata.meta_description).filter(
+                                    BenchmarkMetadata.uuid.in_(uuid_type_desc_df['uuid']))
+        meta_col_names = [col_desc['name'] for col_desc in meta_query.column_descriptions]
+        meta_df = pd.DataFrame(meta_query.all(), columns=meta_col_names)
+
+        measurement_query = self.query(Measurement.id,
+                                       Measurement.measurement_datetime,
+                                       Measurement.measurement_data,
+                                       Measurement.measurement_unit).filter(
+                                            Measurement.id.in_(uuid_type_desc_df.index))
+        measure_col_names = [col_desc['name'] for col_desc in measurement_query.column_descriptions]
+        measurement_df = pd.DataFrame(measurement_query.all(), columns=measure_col_names)
+
+        joined_df = uuid_type_desc_df.reset_index().merge(meta_df, on='uuid')
+        joined_df = joined_df.merge(measurement_df, on='id')
+
+        return joined_df.set_index('id')
