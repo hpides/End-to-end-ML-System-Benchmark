@@ -4,7 +4,6 @@ from queue import Queue
 from threading import Thread, Event
 from time import sleep
 from uuid import uuid4
-from numpy.testing._private.utils import measure
 
 import pandas as pd
 from sqlalchemy import create_engine
@@ -12,53 +11,41 @@ from sqlalchemy.orm import sessionmaker
 
 from .datamodel import Base, Measurement, BenchmarkMetadata
 
-
 class Benchmark:
-    """A class, that manages the database entries for the measured metrics which are logged into the database.
+    """A class that manages the database entries for the measured metrics which are logged into the database.
+
+    Parameters
+    ----------
+    db_file : str
+        The path of the database file
+    description : str, optional
+        The description of the whole pipeline use case. Even though the description is optional, it should be set
+        so the database entries are distinguishable without evaluating the uuid's.
+        This parameter is ignored for Benchmark objects initialized in mode 'r'.
+    mode : str, default='a'
+        One of ['w', 'a', 'r']. The mode corresponds to conventional python file handling modes.
+        Modes 'a' and 'w' are used for storing metrics in a database during a pipeline run
+        and 'r' is used for querying metrics from the database.
 
     Attributes
     ----------
     db_file : str
-        The database file where the metrics should be stored. The mode of db_file is 'append'.
-    description : str, optional
-        The description of the whole pipeline use case. Even though the description is optional, it should be set
-        so the database entries are distinguishable without evaluating the uuid's.
+        path to the database file
+    mode : str
+        mode of the Benchmark object. One of ['w', 'a', 'r'].
     description : str
-        The description of the metric.
-    measure_type : str
-        The measurement type of the metric.
-    value : :obj:'bytes'
-        The bytes object of the data which should be logged.
-    unit : str
-        The unit of the measured values.
-
-    Methods
-    -------
-    close
-        The function that sets the close event and joins the results of the threads.
-    __database_thread_func
-        The function that manages the threading.
-    log(description, measure_type, value, unit='')
-        Logging of measured metrics into the database.
+        description of the pipeline run. Not relevant if mode is 'r'.
+    session : sqlalchemy.orm.session.Session
+        SQLalchemy session
     """
+
     def __init__(self, db_file, description="", mode="a"):
-        """ Initialisation of the benchmark object.
-
-        Parameters
-        ----------
-        db_file : str
-            The database file where the metrics should be stored. The mode of db_file is 'append'.
-        description : str, optional
-            The description of the whole pipeline use case. Even though the description is optional, it should be set
-            so the database entries are distinguishable without evaluating the uuid's.
-        """
-
         self.db_file = db_file
         self.description = description
         self.mode = mode
 
         if mode == 'r':
-            if not os.path.isfile(self.db_file):
+            if not os.path.exists(self.db_file):
                 raise FileNotFoundError("Cannot open a non-existing file in reading mode.")
             engine = create_engine('sqlite+pysqlite:///' + self.db_file)
             Base.metadata.create_all(engine)
@@ -66,7 +53,7 @@ class Benchmark:
             self.session = Session()
 
         if mode == 'w':
-            if os.path.isfile(self.db_file):
+            if os.path.exists(self.db_file):
                 os.remove(self.db_file)
         
         if mode in ['w', 'a']:
@@ -74,24 +61,34 @@ class Benchmark:
             self.uuid = str(uuid4())
             self.queue = Queue()
 
-            self.__db_thread = Thread(target=self.__database_thread_func)
-            self.__db_thread.start()
+            self._db_thread = Thread(target=self._database_thread_func)
+            self._db_thread.start()
 
     def query(self, *args, **kwargs):
+        """
+        Send queries to the database file.
+        You can send queries in the same manner you would query an SQLalchemy session.
+
+        This method only works in mode 'r'.
+        """
         if self.mode != "r":
             raise Exception("Invalid file mode. Mode must be \"r\" to send queries.")
 
         return self.session.query(*args, **kwargs)
 
     def close(self):
-        """The function that sets the close event and joins the results of the threads."""
+        """
+        Close the Benchmark object.
+        For Benchmark objects used in mode 'r', the SQLalchemy session is closed.
+        For the remaining modes the session is closed and all collected metrics are written to the database file.        
+        """
         if self.mode == 'r':
             self.session.close()
         else:
             self.close_event.set()
-            self.__db_thread.join()
+            self._db_thread.join()
 
-    def __database_thread_func(self):
+    def _database_thread_func(self):
         """The function that manages the threading."""
         engine = create_engine('sqlite+pysqlite:///' + self.db_file)
         Base.metadata.create_all(engine)
@@ -119,24 +116,6 @@ class Benchmark:
             session.close()
 
     def log(self, description, measure_type, value, unit=''):
-        """Logging of measured metrics into the database.
-
-        Parameters
-        ----------
-        description : str
-            The description of the metric.
-        measure_type : str
-            The measurement type of the metric.
-        value : :obj:'bytes'
-            The bytes object of the data which should be logged.
-        unit : str
-            The unit of the measured values.
-
-        Returns
-        -------
-        Measurement
-            Measurement object with updated datetime, benchmark_uuid, description, measurement_type, value and unit.
-        """
         measurement = Measurement(measurement_datetime=datetime.now(),
                                   uuid=self.uuid,
                                   measurement_description=description,
@@ -145,11 +124,9 @@ class Benchmark:
                                   measurement_unit=unit)
         self.queue.put(measurement)
 
-
 class VisualizationBenchmark(Benchmark):
     def __init__(self, db_file):
         super().__init__(db_file, mode='r')
-
 
     def query_all_uuid_type_desc(self):       
         query_result = self.query(Measurement.id,

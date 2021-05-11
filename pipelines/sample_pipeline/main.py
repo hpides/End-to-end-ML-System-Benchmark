@@ -15,7 +15,7 @@ from e2ebench import Benchmark,\
                      TTATracker,\
                      LossTracker
 
-bm = Benchmark('sample_db_file.db', description="le description")
+bm = Benchmark('sample_db_file.db', description="le description", mode='w')
 
 bloat_metrics = {
     "throughput": ThroughputMetric('bloat throughput'),
