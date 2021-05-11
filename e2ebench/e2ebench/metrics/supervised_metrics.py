@@ -1,14 +1,12 @@
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime
+import logging
 import os
 import pickle
 import psutil
 import threading
 import time
 import pyRAPL
-import pandas as pd
-import matplotlib.pyplot as plt
-import matplotlib.ticker as ticker
 
 
 class BenchmarkSupervisor:
@@ -169,16 +167,26 @@ class EnergyMetric(Metric):
     needs_threading = False
 
     def before(self):
-        pyRAPL.setup()
-        self.meter = pyRAPL.Measurement('bar')
-        self.meter.begin()
+        try:
+            pyRAPL.setup()
+            self.meter = pyRAPL.Measurement('bar')
+            self.meter.begin()
+            self.successful = True
+        except FileNotFoundError:
+            logging.warning("RAPL file not found. Perhaps you are using a platform that does not support RAPL (for example Windows)")
+            self.successful = False
+        except PermissionError:
+            logging.warning("PermissionError occured while reading RAPL file. Fix with \"sudo chmod -R a+r /sys/class/powercap/intel-rapl\"")
+            self.successful = False
 
     def after(self):
-        self.meter.end()
-        self.data = sum(self.meter.result.pkg)
+        if self.successful:
+            self.meter.end()
+            self.data = sum(self.meter.result.pkg)
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
+        if self.successful:
+            benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
 
 
 class PowerMetric(Metric):
@@ -201,29 +209,41 @@ class PowerMetric(Metric):
         self.meter = None
 
     def before(self):
-        pyRAPL.setup()
-        self.meter = pyRAPL.Measurement('bar')
-        self.measurements = []
-        self.timestamps = []
+        try:
+            pyRAPL.setup()
+            self.meter = pyRAPL.Measurement('bar')
+            self.measurements = []
+            self.timestamps = []
+            self.meter.begin()
+            self.successful = True
+        except FileNotFoundError:
+            logging.debug("RAPL file not found. Perhaps you are using a platform that does not support RAPL (e.g. Windows)")
+            self.successful = False
+        except PermissionError:
+            logging.debug("PermissionError occured while reading RAPL file. Fix with \"sudo chmod -R a+r /sys/class/powercap/intel-rapl\"")
+            self.successful = False
 
     def meanwhile(self, finish_event):
         while not finish_event.isSet():
-            self.meter.begin()
-            time.sleep(self.interval)
-            self.meter.end()
-            power = sum(map(lambda x: x / self.meter.result.duration, self.meter.result.pkg))
-            self.measurements.append(power)
-            self.timestamps.append(datetime.now())
+            if self.successful:
+                self.meter.begin()
+                time.sleep(self.interval)
+                self.meter.end()
+                power = sum(map(lambda x: x / self.meter.result.duration, self.meter.result.pkg))
+                self.measurements.append(power)
+                self.timestamps.append(datetime.now())
 
     def after(self):
-        self.data = {
-            'timestamps' : self.timestamps,
-            'measurements' : self.measurements,
-            'interval' : self.interval
-        }
+        if self.successful:
+            self.data = {
+                'timestamps' : self.timestamps,
+                'measurements' : self.measurements,
+                'interval' : self.interval
+            }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
+        if self.successful:
+            benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
 
 
 class LatencyMetric(Metric):
