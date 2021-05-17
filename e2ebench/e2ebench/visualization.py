@@ -116,7 +116,7 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
             
             ax.plot(relative_timestamps, measurements, label=linelabel)
         
-        ax.set_xlabel(self.yaxis_label)
+        ax.set_xlabel(self.xaxis_label)
         ax.set_ylabel(self.yaxis_label)
         ax.set_title(self.title)
 
@@ -282,6 +282,11 @@ class TTAVisualizer(EpochbasedMultiLineChartVisualizer):
     xaxis_label = "Epoch ID"
     yaxis_label = "Accuracy"
 
+class CPUVisualizer(TimebasedMultiLineChartVisualizer):
+    title = "Metric: CPU usage"
+    xaxis_label = "Time elapsed since start of pipeline run"
+    yaxis_label = "CPU usage in %"
+
 
 type_to_visualizer_class_mapper = {
     "throughput" : ThroughputVisualizer,
@@ -293,5 +298,6 @@ type_to_visualizer_class_mapper = {
     "loss" : LossVisualizer,
     "tta" : TTAVisualizer,
     "confusion-matrix" : ConfusionMatrixVisualizer,
-    "hyperparameters" : HyperparemeterVisualizer
+    "hyperparameters" : HyperparemeterVisualizer,
+    "cpu": CPUVisualizer
     }

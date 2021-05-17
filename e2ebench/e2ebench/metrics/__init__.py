@@ -8,4 +8,5 @@ from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor,\
                                                 PowerMetric,\
                                                 EnergyMetric,\
                                                 LatencyMetric,\
-                                                ThroughputMetric
+                                                ThroughputMetric,\
+                                                CPUMetric

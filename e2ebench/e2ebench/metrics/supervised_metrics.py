@@ -314,3 +314,40 @@ class ThroughputMetric(Metric):
 
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second')
+
+
+class CPUMetric(Metric):
+    """The metric object to measure CPU usage in percent per CPU
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between CPU usage measurements
+    """
+    priority = 1
+    measure_type = 'cpu'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
+        self.interval = interval
+
+    def before(self):
+        self.timestamps = []
+        self.measurements = []
+
+    def meanwhile(self, finish_event):
+        while not finish_event.isSet():
+            self.timestamps.append(datetime.now())
+            self.measurements.append(psutil.cpu_percent(interval=self.interval))
+
+    def after(self):
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+
+    def log(self, benchmark):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit="% per CPU")
