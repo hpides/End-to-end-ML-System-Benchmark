@@ -6,7 +6,6 @@ from tensorflow.keras.models import Sequential
 from tensorflow.keras.layers import Dense, Flatten, Conv2D
 from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
-import json
 
 
 def load_data(num_samples=0):
@@ -16,8 +15,8 @@ def load_data(num_samples=0):
     label_train = f['label'][0:n]
     f.close()
     f = h5py.File('data/validation.h5', 'r')
-    input_val = f['sen1']
-    label_val = f['label']
+    input_val = f['sen1'][0:len(f['label'])]
+    label_val = f['label'][0:len(f['label'])]
     f.close()
     return input_train, label_train, input_val, label_val
 
