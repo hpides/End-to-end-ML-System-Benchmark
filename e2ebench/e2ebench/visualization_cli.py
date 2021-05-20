@@ -48,7 +48,7 @@ def get_args():
     return parser.parse_args()
  
 def filter_by_args(meas_df, meta_df, args):
-    if args.uuids is not None:
+    if args.uuids is not  None:
         meas_df = meas_df[meas_df['uuid'].isin(args.uuids)]
         meta_df = meta_df[meta_df.index.isin(args.uuids)]
     if args.types is not None:

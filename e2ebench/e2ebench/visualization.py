@@ -102,23 +102,44 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
      other key-value pairs}
     Other key-value pairs are values that are general for the entire measurement series such as a sampling interval.
     """
-    
-    def plot_with_matplotlib(self):
-        fig, ax = plt.subplots()
+
+    def __init__(self, df_from_cli, plotting_backend):
+        super().__init__(df_from_cli, plotting_backend)
+        self.timedelta_lists = []
+        self.x_tick_vals = []
+        self.x_tick_labels = []
+        self.measurements_lists = []
+        self.linelabels = []
 
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
-            relative_timestamps = timestamps - timestamps[0]
-            measurements = measurement_dict.pop('measurements')
+            self.timedelta_lists.append(timestamps - timestamps[0])
+            if len(timestamps) > len(self.x_tick_vals):
+                x_tick_idx = np.floor(np.linspace(0, len(self.timedelta_lists[-1])-1, 5)).astype(int)
+                self.x_tick_vals = self.timedelta_lists[-1][x_tick_idx]
+                self.x_tick_labels = self.x_tick_vals.map(self._strfdelta)
+            self.measurements_lists.append(measurement_dict.pop('measurements'))
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
-            
-            ax.plot(relative_timestamps, measurements, label=linelabel)
+            self.linelabels.append("\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time)
+
+
+    def _strfdelta(self, td):
+        hours, remainder = divmod(td.total_seconds(), 3600)
+        minutes, seconds = divmod(remainder, 60)
+        return f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
+    
+    def plot_with_matplotlib(self):
+        fig, ax = plt.subplots()
+
+        for i in range(len(self.df)):
+            ax.plot(self.timedelta_lists[i], self.measurements_lists[i], label=self.linelabels[i])
         
         ax.set_xlabel(self.xaxis_label)
         ax.set_ylabel(self.yaxis_label)
         ax.set_title(self.title)
+        ax.set_xticks([td.value for td in self.x_tick_vals])
+        ax.set_xticklabels(self.x_tick_labels)
 
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         
@@ -130,13 +151,16 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
-            relative_timestamps = timestamps - timestamps[0]
+            timedeltas = timestamps - timestamps[0]
+            x_tick_idx = np.floor(np.linspace(0, len(timedeltas)-1, 5)).astype(int)
+            x_tick_vals = timedeltas[x_tick_idx]
+            x_tick_labels = timedeltas[x_tick_idx].map(self._strfdelta)
             measurements = measurement_dict.pop('measurements')
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
             linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
             
             fig.add_trace(go.Scatter(
-                x=relative_timestamps, y=measurements,
+                x=timedeltas, y=measurements,
                 mode='lines+markers',
                 name=linelabel
             ))
@@ -144,7 +168,12 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         fig.update_layout(
             title=self.title,
             xaxis_title=self.xaxis_label,
-            yaxis_title=self.yaxis_label
+            yaxis_title=self.yaxis_label,
+            xaxis=dict(
+                tickmode='array',
+                tickvals=x_tick_vals,
+                ticktext=x_tick_labels
+            )
         )
         
         return [fig]
@@ -264,7 +293,7 @@ class EnergyVisualizer(BarVisualizer):
 
 class MemoryVisualizer(TimebasedMultiLineChartVisualizer):
     title = "Metric: Memory usage"
-    xaxis_label = "Time elapsed since start of pipeline run"
+    xaxis_label = "Seconds elapsed since start of pipeline run"
     yaxis_label = "Memory usage in MB"
 
 class TimeVisualizer(BarVisualizer):
@@ -286,7 +315,6 @@ class CPUVisualizer(TimebasedMultiLineChartVisualizer):
     title = "Metric: CPU usage"
     xaxis_label = "Time elapsed since start of pipeline run"
     yaxis_label = "CPU usage in %"
-
 
 type_to_visualizer_class_mapper = {
     "throughput" : ThroughputVisualizer,
