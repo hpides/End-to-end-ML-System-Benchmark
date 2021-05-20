@@ -57,6 +57,7 @@ def train():
     input_train, label_train, input_val, label_val = load_data(n)
 
     input_train = input_train.reshape((len(input_train), img_width, img_height, img_num_channels))
+    input_val = input_val.reshape((len(input_val), img_width, img_height, img_num_channels))
 
     strategy = tf.distribute.MultiWorkerMirroredStrategy()
     with strategy.scope():
