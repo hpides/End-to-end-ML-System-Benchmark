@@ -153,7 +153,7 @@ class MemoryMetric(Metric):
         }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit="MB")
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit="MiB")
 
 
 class EnergyMetric(Metric):

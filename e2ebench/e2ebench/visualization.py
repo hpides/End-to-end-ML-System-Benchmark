@@ -133,20 +133,13 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         fig, ax = plt.subplots()
 
         for i in range(len(self.df)):
-            # measurement_dict = row['measurement_data']
-            # timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
-            # relative_timestamps = timestamps - timestamps[0]
-            # measurements = measurement_dict.pop('measurements')
-            # measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
-            # linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
-            
             ax.plot(self.timedelta_lists[i], self.measurements_lists[i], label=self.linelabels[i])
         
         ax.set_xlabel(self.xaxis_label)
         ax.set_ylabel(self.yaxis_label)
         ax.set_title(self.title)
-        # ax.set_xticks(self.x_tick_vals)
-        # ax.set_xticklabels(self.x_tick_labels)
+        ax.set_xticks([td.value for td in self.x_tick_vals])
+        ax.set_xticklabels(self.x_tick_labels)
 
         ax.yaxis.set_major_locator(ticker.LinearLocator(12))
         
