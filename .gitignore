@@ -8,3 +8,4 @@ ENV
 .idea
 .ipynb_checkpoints
 .vscode
+pipelines/sample_pipeline/reading_main.py
