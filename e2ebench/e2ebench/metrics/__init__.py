@@ -6,7 +6,7 @@ from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor,\
                                                 TimeMetric,\
                                                 MemoryMetric,\
                                                 LatencyMetric,\
-                                                ThroughputMetric
+                                                ThroughputMetric,\
                                                 PowerMetric,\
                                                 EnergyMetric,\
                                                 CPUMetric
