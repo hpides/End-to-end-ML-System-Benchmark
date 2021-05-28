@@ -5,7 +5,9 @@ import os
 import pickle
 import threading
 import time
-
+import pandas as pd
+import matplotlib.pyplot as plt
+import matplotlib.ticker as ticker
 import numpy as np
 import psutil
 import pyRAPL
@@ -155,7 +157,7 @@ class MemoryMetric(Metric):
     def log(self, benchmark):
         benchmark.log(self.description, self.measure_type, self.serialize(), unit="MiB")
 
-
+        
 class EnergyMetric(Metric):
     """The metric object to measure energy used in the execution
 

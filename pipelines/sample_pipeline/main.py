@@ -8,13 +8,15 @@ from e2ebench import Benchmark,\
                      BenchmarkSupervisor,\
                      TimeMetric,\
                      MemoryMetric,\
-                     PowerMetric,\
-                     EnergyMetric,\
                      ThroughputMetric,\
                      LatencyMetric,\
                      TTATracker,\
                      LossTracker,\
+                     PowerMetric,\
+                     EnergyMetric
+                     LossTracker,\
                      CPUMetric
+ 
 
 bm = Benchmark('sample_db_file.db', description="le description")
 

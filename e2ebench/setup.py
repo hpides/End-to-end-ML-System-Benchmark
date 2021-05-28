@@ -12,7 +12,7 @@ setup(
         'pandas',
         'plotly',
         'psutil',
-        'pyRAPL',
+        # 'pyRAPL',
         'seaborn',
         'scikit-learn',
         'sqlalchemy',
