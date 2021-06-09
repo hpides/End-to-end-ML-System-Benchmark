@@ -3,20 +3,18 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
 import sys
-import e2ebench
 from benchmarking import bm
 import e2ebench as eb
 
 
-@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time')], bm)
+#@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time'), eb.PowerMetric('test power')], bm)
 def test(model):
-    cmt = eb.ConfusionMatrixTracker(bm)
 
     # n = 32768  # 2**15
-    n = 1024
+    n = 24187
     img_width, img_height, img_num_channels = 32, 32, 8
 
-    f = h5py.File('data/testing.h5', 'r')
+    f = h5py.File('/media/jonas/DATA/So2Sat/m1483140/testing.h5', 'r')
     input_test = f['sen1'][0:n]
     label_test = f['label'][0:n]
     f.close()
@@ -42,7 +40,5 @@ def test(model):
                "heavy industry", "dense trees", "scattered tree",
                "brush, scrub", "low plants", "bare rock or paved",
                "bare soil or sand", "water"]
-
-    cmt.track(con_mat, classes, "confusion matrix")
 
     return {"confusion matrix": con_mat, "classes": classes}
