@@ -13,7 +13,7 @@ from e2ebench import Benchmark,\
                      TTATracker,\
                      LossTracker,\
                      PowerMetric,\
-                     EnergyMetric
+                     EnergyMetric,\
                      LossTracker,\
                      CPUMetric
  

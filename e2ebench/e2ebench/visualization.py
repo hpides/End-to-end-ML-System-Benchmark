@@ -148,21 +148,11 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
     def plot_with_plotly(self):
         fig = go.Figure()
         
-        for _, row in self.df.iterrows():
-            measurement_dict = row['measurement_data']
-            timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
-            timedeltas = timestamps - timestamps[0]
-            x_tick_idx = np.floor(np.linspace(0, len(timedeltas)-1, 5)).astype(int)
-            x_tick_vals = timedeltas[x_tick_idx]
-            x_tick_labels = timedeltas[x_tick_idx].map(self._strfdelta)
-            measurements = measurement_dict.pop('measurements')
-            measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
-            
+        for i in range(len(self.df)):
             fig.add_trace(go.Scatter(
-                x=timedeltas, y=measurements,
+                x=self.timedelta_lists[i], y=self.measurements_lists[i],
                 mode='lines+markers',
-                name=linelabel
+                name=self.linelabels[i]
             ))
 
         fig.update_layout(
@@ -171,8 +161,8 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
             yaxis_title=self.yaxis_label,
             xaxis=dict(
                 tickmode='array',
-                tickvals=x_tick_vals,
-                ticktext=x_tick_labels
+                tickvals=self.x_tick_vals,
+                ticktext=self.x_tick_labels
             )
         )
         
