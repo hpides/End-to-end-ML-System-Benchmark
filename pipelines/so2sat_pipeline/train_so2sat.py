@@ -1,5 +1,5 @@
 import h5py
-import e2ebench as eb
+import umlaut as eb
 from benchmarking import bm
 
 from tensorflow.keras.models import Sequential

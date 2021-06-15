@@ -2,10 +2,10 @@ from benchmarking import bm
 from tensorflow.keras.optimizers import Adam
 import os
 import sys
-import e2ebench as eb
+import umlaut as eb
 from benchmarking import bm
 
-from e2ebench import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, \
+from umlaut import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, \
     MemoryMetric, PowerMetric, EnergyMetric, LatencyMetric, ThroughputMetric, TTATracker
 
 

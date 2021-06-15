@@ -2,13 +2,13 @@ import torch
 import torch.nn as nn
 import os
 import sys
-import e2ebench
+import umlaut
 from benchmarking import bm
 
-@e2ebench.MeasureTime(bm, description="Training time")
-@e2ebench.MeasureThroughput(bm, description="Training throughput")
-@e2ebench.MeasureLatency(bm, description="Training latency")
-@e2ebench.MeasureMemorySamples(bm, description="Training memory usage")
+@umlaut.MeasureTime(bm, description="Training time")
+@umlaut.MeasureThroughput(bm, description="Training throughput")
+@umlaut.MeasureLatency(bm, description="Training latency")
+@umlaut.MeasureMemorySamples(bm, description="Training memory usage")
 # @pkg.MeasureMemoryTracemalloc(bm, description="Training memory usage")
 def train(model, trainloader):
 

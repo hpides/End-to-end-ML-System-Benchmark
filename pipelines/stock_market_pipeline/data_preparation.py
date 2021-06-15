@@ -5,7 +5,7 @@ from keras.layers import *
 from sklearn.preprocessing import MinMaxScaler
 import os
 import sys
-import e2ebench as eb
+import umlaut as eb
 from benchmarking import bm
 
 

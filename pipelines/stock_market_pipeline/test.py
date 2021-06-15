@@ -3,7 +3,7 @@ import pandas as pd
 import numpy as np
 import os
 import sys
-import e2ebench as eb
+import umlaut as eb
 from benchmarking import bm
 
 

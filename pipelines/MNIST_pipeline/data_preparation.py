@@ -5,12 +5,12 @@ import torch.nn as nn
 import torch.nn.functional as F
 import os
 import sys
-import e2ebench
+import umlaut
 from benchmarking import bm
 
 
-@e2ebench.MeasureTime(bm, description="time spent on preparing data")
-@e2ebench.MeasureMemorySamples(bm, description="memory usage of data preparation")
+@umlaut.MeasureTime(bm, description="time spent on preparing data")
+@umlaut.MeasureMemorySamples(bm, description="memory usage of data preparation")
 # @pkg.MeasureMemoryTracemalloc(bm, description="memory usage of data preparation")
 def data_preparation():
 

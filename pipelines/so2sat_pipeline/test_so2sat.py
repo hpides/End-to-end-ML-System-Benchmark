@@ -3,9 +3,9 @@ from sklearn.metrics import confusion_matrix
 import numpy as np
 import os
 import sys
-import e2ebench
+import umlaut
 from benchmarking import bm
-import e2ebench as eb
+import umlaut as eb
 
 
 @eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time')], bm)

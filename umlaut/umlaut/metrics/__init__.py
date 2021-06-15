@@ -1,8 +1,8 @@
-from e2ebench.metrics.valued_metrics import ConfusionMatrixTracker, \
+from umlaut.metrics.valued_metrics import ConfusionMatrixTracker, \
                                             HyperparameterTracker,\
                                             TTATracker,\
                                             LossTracker
-from e2ebench.metrics.supervised_metrics import BenchmarkSupervisor,\
+from umlaut.metrics.supervised_metrics import BenchmarkSupervisor,\
                                                 TimeMetric,\
                                                 MemoryMetric,\
                                                 LatencyMetric,\

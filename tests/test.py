@@ -1,14 +1,14 @@
 import unittest
-import e2ebench
+import umlaut
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
-from e2ebench.e2ebench.datamodel import Measurement
+from umlaut.umlaut.datamodel import Measurement
 import pandas as pd
 import time
 import os
 import numpy as np
 
-bm = e2ebench.Benchmark('test_benchmark.db', description="Database for testing the benchmark package")
+bm = umlaut.Benchmark('test_benchmark.db', description="Database for testing the benchmark package")
 
 
 def mock_function():
@@ -52,7 +52,7 @@ class TestDecorators(unittest.TestCase):
         #    print("The file does not exist")
 
     def test_time(self):
-        @e2ebench.MeasureTime(bm, description="Time")
+        @umlaut.MeasureTime(bm, description="Time")
         def dec_mock_function():
             mock_function()
         dec_mock_function()
@@ -62,7 +62,7 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(len(df), 1)
 
     def test_confusion_matrix(self):
-        @e2ebench.MeasureMulticlassConfusion(bm, description="Multiclass Confusion Matrix")
+        @umlaut.MeasureMulticlassConfusion(bm, description="Multiclass Confusion Matrix")
         def dec_mock_function():
             return mock_function()
         result = dec_mock_function()
@@ -73,7 +73,7 @@ class TestDecorators(unittest.TestCase):
         self.assertEqual(len(df), 1)
 
     def test_loss(self):
-        @e2ebench.MeasureLoss(bm, description="Loss")
+        @umlaut.MeasureLoss(bm, description="Loss")
         def dec_mock_function():
             return mock_function()
         result = dec_mock_function()

@@ -1,3 +1,3 @@
-import e2ebench
+import umlaut
 
-bm = e2ebench.Benchmark('backblaze_benchmark.db', description="Complete Backblaze data benchmark")
+bm = umlaut.Benchmark('backblaze_benchmark.db', description="Complete Backblaze data benchmark")

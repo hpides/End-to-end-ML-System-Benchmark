@@ -1,11 +1,11 @@
 from setuptools import setup, find_packages
 
 setup(
-    name='e2ebench',
+    name='umlaut',
     version='0.1.0',
     description='End-to-end machine learning benchmark',
     author='Willi Rieck, Christian Jacob, Jonas Schulze, Jost Morgenstern',
-    packages=find_packages(include=['e2ebench']),
+    packages=find_packages(include=['umlaut']),
     install_requires=[
         'matplotlib',
         'numpy',
@@ -19,6 +19,6 @@ setup(
         'PyInquirer'
     ],
     entry_points = {
-        'console_scripts': ['e2ebench-cli=e2ebench.visualization_cli:main'],
+        'console_scripts': ['umlaut-cli=umlaut.visualization_cli:main'],
     }
 )

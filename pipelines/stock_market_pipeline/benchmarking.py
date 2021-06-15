@@ -1,5 +1,5 @@
 import os
 import sys
-import e2ebench
+import umlaut
 
-bm = e2ebench.Benchmark('stock_market_benchmark.db', description="Stock Market Prediction")
+bm = umlaut.Benchmark('stock_market_benchmark.db', description="Stock Market Prediction")

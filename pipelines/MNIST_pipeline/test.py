@@ -3,13 +3,13 @@ import numpy as np
 import torch.nn as nn
 import os
 import sys
-import e2ebench
+import umlaut
 from benchmarking import bm
 
 
-@e2ebench.MeasureTime(bm, description="Testing time")
+@umlaut.MeasureTime(bm, description="Testing time")
 # @pkg.MeasureMulticlassConfusion(bm, description="Testing/Validation results")
-@e2ebench.MeasureMemorySamples(bm, description="Testing memory usage")
+@umlaut.MeasureMemorySamples(bm, description="Testing memory usage")
 # @pkg.MeasureMemoryTracemalloc(bm, description="Testing memory usage")
 def test(model, testloader):
 

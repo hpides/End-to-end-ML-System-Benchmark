@@ -1,4 +1,4 @@
--e ../../e2ebench
+-e ../../umlaut
 numpy
 requests
 torch

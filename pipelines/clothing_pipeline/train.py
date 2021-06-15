@@ -1,5 +1,5 @@
 import tensorflow as tf
-from e2ebench import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, \
+from umlaut import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, BenchmarkSupervisor, TimeMetric, \
     MemoryMetric, PowerMetric, EnergyMetric, LatencyMetric, ThroughputMetric, TTATracker, LossTracker
 
 bm = Benchmark('clothing.db')

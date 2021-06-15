@@ -1,0 +1,10 @@
+matplotlib
+numpy
+pandas
+plotly
+psutil
+pyRAPL
+seaborn
+scikit-learn
+sqlalchemy
+PyInquirer

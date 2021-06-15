@@ -2,7 +2,7 @@ import time
 
 import numpy as np
 
-from e2ebench import Benchmark,\
+from umlaut import Benchmark,\
                      ConfusionMatrixTracker,\
                      HyperparameterTracker,\
                      BenchmarkSupervisor,\

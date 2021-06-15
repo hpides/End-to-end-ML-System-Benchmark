@@ -4,11 +4,11 @@ import sys
 import h5py
 from sklearn.ensemble import RandomForestClassifier
 from sklearn.metrics import confusion_matrix
-import e2ebench
+import umlaut
 
 from benchmarking import bm
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric('training time')], bm)
+@umlaut.BenchmarkSupervisor([umlaut.TimeMetric('training time')], bm)
 def train():
     with h5py.File('data/h5py.h5', 'r') as hdf:
         X_train = hdf['X_train'][:,:]
@@ -28,7 +28,7 @@ def test(training_result):
         conf_mat = confusion_matrix(y_test, y_pred)
         labels = classifier.classes_
 
-        e2ebench.ConfusionMatrixTracker(bm).track(conf_mat, labels, "Testing results confusion matrix")
+        umlaut.ConfusionMatrixTracker(bm).track(conf_mat, labels, "Testing results confusion matrix")
 
 
 def train_and_test():

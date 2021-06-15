@@ -1,11 +1,11 @@
-"""e2ebench CLI for visualizing metrics
+"""umlaut CLI for visualizing metrics
 
-The visualization frontend of e2ebench.
-Given a database file as created by an e2ebench.Benchmark object,
+The visualization frontend of umlaut.
+Given a database file as created by an umlaut.Benchmark object,
 this tool gives a selection of available metrics and helps users choose a subset to visualize.
 Users can select metrics in two ways:
-    1. by using command line arguments (see e2ebench-cli -h)
-    2. If no arguments are provided, e2ebench-cli will prompt the user for arguments.
+    1. by using command line arguments (see umlaut-cli -h)
+    2. If no arguments are provided, umlaut-cli will prompt the user for arguments.
 All metrics of the same measurement type are then visualized in a single diagram.
 """
 
@@ -21,16 +21,16 @@ from PyInquirer import prompt, Separator
 from sqlalchemy.orm import sessionmaker
 from sqlalchemy import create_engine, asc
 
-from e2ebench import VisualizationBenchmark
-from e2ebench.datamodel import Measurement, BenchmarkMetadata
-from e2ebench.visualization import type_to_visualizer_class_mapper
+from umlaut import VisualizationBenchmark
+from umlaut.datamodel import Measurement, BenchmarkMetadata
+from umlaut.visualization import type_to_visualizer_class_mapper
 
 def get_args():
-    file_help = "Sqlite Database file as created by an e2ebench.Benchmark object"
+    file_help = "Sqlite Database file as created by an umlaut.Benchmark object"
     module_help = "Visualization CLI for End to End ML System Benchmark"
     uuid_help = "UUUIDs of the runs to visualize. Each uuid corresponds to one pipeline run. " + \
                 "For humans uuids are usually tedious to handle. Leave this parameter out to be shown a list of available uuids to choose from."
-    type_help = "Measurement types of the metrics to visualize. Each metric that e2ebench supports has a descriptive type. " + \
+    type_help = "Measurement types of the metrics to visualize. Each metric that umlaut supports has a descriptive type. " + \
                 "Like the uuids, this parameter is optional and can be choosen by prompt."
     description_help = "Descriptions are supplied by users during the implementation stage of a pipeline. " + \
                        "They help giving descriptive information about captured metrics. " + \

@@ -3,7 +3,7 @@ import os
 import re
 import sys
 
-import e2ebench
+import umlaut
 import h5py
 from imblearn.under_sampling import RandomUnderSampler
 from imblearn.over_sampling import SMOTE
@@ -31,7 +31,7 @@ pandas_hdf = pd.HDFStore(pandas_h5_path)
 h5py_hdf = h5py.File(h5py_h5_path, 'a')
 
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric(description='raw parsing time'), e2ebench.MemoryMetric('raw parsing memory')], bm)
+@umlaut.BenchmarkSupervisor([umlaut.TimeMetric(description='raw parsing time'), umlaut.MemoryMetric('raw parsing memory')], bm)
 def parse_raw_csv_files():
     hash_bucket_count = 20
     with tqdm(total=len(os.listdir(raw_data_path))) as progress_bar:
@@ -58,7 +58,7 @@ def add_days_to_failure_col_to_group(group):
         group_copy['days_to_failure'] = -1
     return group_copy
 
-@e2ebench.BenchmarkSupervisor([e2ebench.TimeMetric('transferring time'), e2ebench.MemoryMetric('transferring memory')], bm)
+@umlaut.BenchmarkSupervisor([umlaut.TimeMetric('transferring time'), umlaut.MemoryMetric('transferring memory')], bm)
 def transfer_from_pandas_to_h5py():
     dataset_lengths = [int(length) for length in re.findall("nrows->(\d*)", pandas_hdf.info())]
     entry_count = sum(dataset_lengths)

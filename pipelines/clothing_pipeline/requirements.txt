@@ -1,2 +1,2 @@
--e ../../e2ebench
+-e ../../umlaut
 tensorflow
