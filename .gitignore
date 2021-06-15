@@ -2,10 +2,9 @@ data
 __pycache__
 *benchmark.db
 env
-e2ebench.egg-info
+umlaut.egg-info
 ENV
 *.db
 .idea
 .ipynb_checkpoints
 .vscode
-pipelines/sample_pipeline/reading_main.py

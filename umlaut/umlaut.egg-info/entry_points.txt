@@ -1,3 +1,0 @@
-[console_scripts]
-umlaut-cli = umlaut.visualization_cli:main
-
