@@ -7,7 +7,7 @@ from math import ceil
 import sqlalchemy as db
 from datetime import datetime
 from realTimeBench.webapp import WebApp
-import multiprocessing
+from multiprocessing import Process, Manager
 from pytorch_lightning.callbacks import Callback
 
 
@@ -37,26 +37,26 @@ class realTimeBenchmarker_pyTorch(Callback):
                              db.Column('Power', db.Float())
                              )
 
-        metadata.create_all(engine)  # Creates the table
+        metadata.create_all(engine)
+
+        manager = Manager()
+        self.metrics = manager.dict()
+        self.metrics["live"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["epoch"] = ["---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["comparison_choice"] = ""
+        self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
 
         self.webApp = WebApp(self)
-        server_process = multiprocessing.Process(target=self.webApp.run)
+        server_process = Process(target=self.webApp.run, args=(self.metrics,))
         server_process.start()
         time.sleep(0.5)
 
-    first_loss = 0
-    first_acc = 0
-
-    process = psutil.Process(os.getpid())
-    before_time = 0
-    train_begin_time = 0
-    epoch_begin_time = 0
-
-    def updateComparison(self):
-        f = open("comp.txt", "r")
-        s = f.read()
-        f.close()
-        return s
+        self.first_loss = 0
+        self.first_acc = 0
+        self.process = psutil.Process(os.getpid())
+        self.before_time = 0
+        self.train_begin_time = 0
+        self.epoch_begin_time = 0
 
     def getComparisonOptions(self):
         query = db.select([self.logs.columns.Starttime.distinct()])
@@ -65,59 +65,36 @@ class realTimeBenchmarker_pyTorch(Callback):
         return [r[0] for r in ResultSet]
 
     def getComparison(self):
-        f = open("compChoice.txt", "w")
-        f.close()
-        f = open("compChoice.txt", "r")
-        s = f.read()
-        f.close()
+        s = self.metrics["comparison_choice"]
 
         time_comp = time.perf_counter() - self.train_begin_time
-        #query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == '2021-06-03 08:09:12.062038', self.logs.columns.Time > time_comp)).order_by(db.asc(self.logs.columns.Time))
+        # query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == '2021-06-03 08:09:12.062038', self.logs.columns.Time > time_comp)).order_by(db.asc(self.logs.columns.Time))
         query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == s.replace('T', ' '),
                                                      self.logs.columns.Time > time_comp)).order_by(
-                                                     db.asc(self.logs.columns.Time))
+            db.asc(self.logs.columns.Time))
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.first()
 
-        f = open("comp.txt", "w")
-        s = ""
         if ResultSet is not None:
-            for i in range(len(ResultSet)-1):
-                s+= " " + str(ResultSet[i+1])
-        f.write(s)
-        f.close()
-
-    def update(self):
-        f = open("temp.txt", "r")
-        s = f.read()
-        f.close()
-        return s
-
-    def updateEpoch(self):
-        f = open("epoch.txt", "r")
-        s = f.read()
-        f.close()
-        return s
+            for i in range(len(ResultSet) - 1):
+                self.metrics["comparison"][i] = str(ResultSet[i + 1])
+        else:
+            self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
 
     def on_train_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
-        f = open("epoch.txt", "w")
-        f.write("--- --- --- --- --- --- ---")
-        f.close()
-        f = open("comp.txt", "w")
-        f.write("--- --- --- --- --- --- --- --- --- ---")
-        f.close()
         self.train_begin_time = time.perf_counter()
         self.starttime = datetime.now()
 
     def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        #print(batch_idx)
+        self.webApp.test = batch_idx
         self.before_time = time.perf_counter()
 
     def on_train_epoch_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
-        #print(trainer.current_epoch)
         self.epoch_begin_time = time.perf_counter()
 
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        if batch_idx % 20 != 0:
+            return
         self.getComparison()
         loss = outputs["loss"].item()
         acc = outputs["acc"].item()
@@ -159,20 +136,26 @@ class realTimeBenchmarker_pyTorch(Callback):
         ResultProxy = self.connection.execute(query)
         results = self.connection.execute(db.select([self.logs])).fetchall()
 
-        f = open("temp.txt", "w")
-        f.write("{:2}/{}\t {:5}/{}\t  {:7.4f}, {}%\t {:8.4f}, {}% {:5.0f}MB \t\t\t{:4.0f}m{}s " \
-                "\t\t\t{:4.0f}m{}s \t\t\t{:6.0f}m{}s\t\t\t{:6.5f}Wh \t\t{}%".format(
-            current_epoch + 1, self.no_epochs, batch + 1, self.no_batches, loss, loss_trend,
-            acc, acc_trend, memory,
-            time_epoch // 60, int(time_epoch % 60), eta_epoch // 60, int(eta_epoch % 60), eta_train // 60,
-            int(eta_train % 60),
-            energy, psutil.cpu_percent()))
-        f.close()
+        print(self.metrics["live"])
+
+        self.metrics["live"] = [
+            "{:2}/{}".format(current_epoch + 1, self.no_epochs),
+            "{:5}/{}".format(batch + 1, self.no_batches),
+            "{:7.4f}".format(loss),
+            "{}%".format(loss_trend),
+            "{:8.4f}".format(acc),
+            "{}%".format(acc_trend),
+            "{:5.0f}MB ".format(memory),
+            "{:4.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
+            "{:4.0f}m{}s".format(eta_epoch//60,int(eta_epoch%60)),
+            "{:6.0f}m{}s".format(eta_train//60, int(eta_train%60)),
+            "{:6.5f}Wh".format(self.meter.result.pkg[0] * 0.00000000028),
+            "{}%".format(psutil.cpu_percent())
+        ]
 
     def on_train_epoch_end(self, trainer, pl_module, unused=None):
         loss = trainer.logged_metrics["train_loss"].item()
         acc = trainer.logged_metrics["train_acc"].item()
-        self.getComparison()
         time_epoch = time.perf_counter() - self.epoch_begin_time
         if self.first_loss - loss != 0:
             loss_trend = int((loss - self.first_loss) / self.first_loss * 100)
@@ -188,18 +171,18 @@ class realTimeBenchmarker_pyTorch(Callback):
         else:
             acc_trend = 0
 
-        f = open("epoch.txt", "w")
-        f.write(
-            "{} {:2.0f}m{}s {:4.2f}s {:6.4f} {}% {:6.4f} {}%".format(trainer.current_epoch + 1, time_epoch // 60, int(time_epoch % 60),
-                                                                     time_epoch / self.no_batches, loss,
-                                                                     loss_trend,
-                                                                     acc, acc_trend))
-        f.close()
+        self.metrics["epoch"] = [
+            "{}".format(trainer.current_epoch + 1),
+            "{:2.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
+            "{:4.2f}s".format(time_epoch / self.no_batches),
+            "{:6.4f}".format(loss),
+            "{}%".format(loss_trend),
+            "{:6.4f}".format(acc),
+            "{}%".format(acc_trend)
+        ]
 
 
-
-
-class realTimeBenchmarker(callbacks.Callback):
+class realTimeBenchmarker_tensorflow(callbacks.Callback):
 
     def __init__(self, input_size, batch_size, no_epochs):
 
@@ -226,29 +209,27 @@ class realTimeBenchmarker(callbacks.Callback):
                        db.Column('Power', db.Float())
                        )
 
-        metadata.create_all(engine)  # Creates the table
+        metadata.create_all(engine)
+
+        manager = Manager()
+        self.metrics = manager.dict()
+        self.metrics["live"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["epoch"] = ["---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["comparison_choice"] = ""
+        self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
 
         self.webApp = WebApp(self)
-        server_process = multiprocessing.Process(target=self.webApp.run)
+        server_process = Process(target=self.webApp.run, args=(self.metrics,))
         server_process.start()
         time.sleep(0.5)
 
-    current_epoch = 5
-    first_loss = 0
-    first_acc = 0
-
-    process = psutil.Process(os.getpid())
-    before_time = 0
-    train_begin_time = 0
-    epoch_begin_time = 0
-
-    def updateComparison(self):
-        f = open("compChoice.txt", "w")
-        f.close()
-        f = open("comp.txt", "r")
-        s = f.read()
-        f.close()
-        return s
+        self.current_epoch = 0
+        self.first_loss = 0
+        self.first_acc = 0
+        self.process = psutil.Process(os.getpid())
+        self.before_time = 0
+        self.train_begin_time = 0
+        self.epoch_begin_time = 0
 
     def getComparisonOptions(self):
         query = db.select([self.logs.columns.Starttime.distinct()])
@@ -257,9 +238,7 @@ class realTimeBenchmarker(callbacks.Callback):
         return [r[0] for r in ResultSet]
 
     def getComparison(self):
-        f = open("compChoice.txt", "r")
-        s = f.read()
-        f.close()
+        s = self.metrics["comparison_choice"]
 
         time_comp = time.perf_counter() - self.train_begin_time
         #query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == '2021-06-03 08:09:12.062038', self.logs.columns.Time > time_comp)).order_by(db.asc(self.logs.columns.Time))
@@ -269,33 +248,13 @@ class realTimeBenchmarker(callbacks.Callback):
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.first()
 
-        f = open("comp.txt", "w")
-        s = ""
         if ResultSet is not None:
             for i in range(len(ResultSet)-1):
-                s+= " " + str(ResultSet[i+1])
-        f.write(s)
-        f.close()
-
-    def update(self):
-        f = open("temp.txt", "r")
-        s = f.read()
-        f.close()
-        return s
-
-    def updateEpoch(self):
-        f = open("epoch.txt", "r")
-        s = f.read()
-        f.close()
-        return s
+                self.metrics["comparison"][i] = str(ResultSet[i+1])
+        else:
+            self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
 
     def on_train_begin(self, logs=None):
-        f = open("epoch.txt", "w")
-        f.write("--- --- --- --- --- --- ---")
-        f.close()
-        f = open("comp.txt", "w")
-        f.write("--- --- --- --- --- --- --- --- --- ---")
-        f.close()
         self.train_begin_time = time.perf_counter()
         self.starttime = datetime.now()
 
@@ -342,17 +301,23 @@ class realTimeBenchmarker(callbacks.Callback):
         ResultProxy = self.connection.execute(query)
         results = self.connection.execute(db.select([self.logs])).fetchall()
 
-        f = open("temp.txt", "w")
-        f.write("{:2}/{}\t {:5}/{}\t  {:7.4f}, {}%\t {:8.4f}, {}% {:5.0f}MB \t\t\t{:4.0f}m{}s " \
-                                   "\t\t\t{:4.0f}m{}s \t\t\t{:6.0f}m{}s\t\t\t{:6.5f}Wh \t\t{}%".format(
-            self.current_epoch + 1, self.no_epochs, batch + 1, self.no_batches, logs["loss"], loss_trend, logs["accuracy"], acc_trend, memory,
-            time_epoch//60, int(time_epoch%60), eta_epoch//60,int(eta_epoch%60), eta_train//60, int(eta_train%60),
-            self.meter.result.pkg[0] * 0.00000000028, psutil.cpu_percent()))
-        f.close()
+        self.metrics["live"] = [
+            "{:2}/{}".format(self.current_epoch + 1, self.no_epochs),
+            "{:5}/{}".format(batch + 1, self.no_batches),
+            "{:7.4f}".format(logs["loss"]),
+            "{}%".format(loss_trend),
+            "{:8.4f}".format(logs["accuracy"]),
+            "{}%".format(acc_trend),
+            "{:5.0f}MB ".format(memory),
+            "{:4.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
+            "{:4.0f}m{}s".format(eta_epoch//60,int(eta_epoch%60)),
+            "{:6.0f}m{}s".format(eta_train//60, int(eta_train%60)),
+            "{:6.5f}Wh".format(self.meter.result.pkg[0] * 0.00000000028),
+            "{}%".format(psutil.cpu_percent())
+        ]
 
     def on_epoch_end(self, epoch, logs=None):
-        self.getComparison()
-        print(self.model.get_weights())
+        #print(self.model.get_weights())
         time_epoch = time.perf_counter() - self.epoch_begin_time
         if self.first_loss - logs["loss"] != 0:
             loss_trend = int((logs["loss"] - self.first_loss) / self.first_loss * 100)
@@ -368,8 +333,12 @@ class realTimeBenchmarker(callbacks.Callback):
         else:
             acc_trend = 0
 
-        f = open("epoch.txt", "w")
-        f.write("{} {:2.0f}m{}s {:4.2f}s {:6.4f} {}% {:6.4f} {}%".format(epoch + 1, time_epoch//60, int(time_epoch%60),
-                                                  time_epoch / self.no_batches, logs["loss"], loss_trend,
-                                                                        logs["accuracy"], acc_trend))
-        f.close()
+        self.metrics["epoch"] = [
+            "{}".format(epoch + 1),
+            "{:2.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
+            "{:4.2f}s".format(time_epoch / self.no_batches),
+            "{:6.4f}".format(logs["loss"]),
+            "{}%".format(loss_trend),
+            "{:6.4f}".format(logs["accuracy"]),
+            "{}%".format(acc_trend)
+        ]
