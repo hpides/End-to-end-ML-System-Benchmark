@@ -2,6 +2,8 @@ import dash
 import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
+import multiprocessing
+import time
 
 
 class WebApp:
@@ -11,7 +13,7 @@ class WebApp:
         self.rtb = rtb
         self.app = dash.Dash(__name__, external_stylesheets=self.external_stylesheets)
 
-    def run(self, debug=False):
+    def run(self, metrics, debug=False):
 
         timestamps = self.rtb.getComparisonOptions()
 
@@ -48,7 +50,7 @@ class WebApp:
                            [State('warnings-text', 'children')])
         def update_batch(n, warning):
             style = {'padding': '5px', 'fontSize': '16px'}
-            s = self.rtb.update().split()
+            s = metrics["live"]
             loss_color = "green"
             acc_color = "green"
             if s[3].startswith("+"):
@@ -59,7 +61,6 @@ class WebApp:
                 acc_color = "red"
                 warningtext = "Epoch: {}, Batch: {} - Accuracy is decreasing".format(s[0], s[1])
                 warning = html.P([warning, warningtext, html.Br()])
-
             return [
                 html.P(
 
@@ -83,7 +84,7 @@ class WebApp:
                            Input('interval-component', 'n_intervals'))
         def update_epoch(n):
             style = {'padding': '5px', 'fontSize': '16px'}
-            s = self.rtb.updateEpoch().split()
+            s = metrics["epoch"]
 
             loss_color = "green"
             acc_color = "green"
@@ -109,9 +110,7 @@ class WebApp:
                            Input('interval-component', 'n_intervals'))
         def update_comparison(n):
             style = {'padding': '5px', 'fontSize': '16px'}
-            s = self.rtb.updateComparison().split()
-            if len(s) != 10:
-                s = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
+            s = metrics["comparison"]
 
             loss_color = "red"
             acc_color = "green"
@@ -142,9 +141,7 @@ class WebApp:
         def update_output(value):
             if isinstance(value, list):
                 return "Comparison with run from ---"
-            f = open("compChoice.txt", "w")
-            f.write(value)
-            f.close()
+            metrics["comparison_choice"] = value
             return "Comparison with run from {}".format(value)
 
         self.app.run_server(debug=debug)
