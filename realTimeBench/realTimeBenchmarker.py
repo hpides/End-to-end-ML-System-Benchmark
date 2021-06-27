@@ -42,6 +42,14 @@ def insert_epoch_summary(metrics, current_epoch, time, avg_time, loss, loss_tren
     return metrics
 
 
+def insert_test_summary(metrics, loss, acc, loss_trend, acc_trend):
+    metrics["test_loss"] = loss
+    metrics["test_acc"] = acc
+    metrics["test_loss_trend"] = loss_trend
+    metrics["test_acc_trend"] = acc_trend
+    return metrics
+
+
 def insert_comparison(metrics, ResultSet):
     if ResultSet is not None:
         metrics["available"] = True
@@ -60,12 +68,32 @@ def insert_comparison(metrics, ResultSet):
     return metrics
 
 
-def setupWebapp(rtb, metrics):
-    webApp = WebApp(rtb)
+def setup_webapp(metrics):
+    webApp = WebApp()
     server_process = Process(target=webApp.run, args=(metrics,))
     server_process.start()
     time.sleep(0.5)
     return webApp
+
+
+def track(memory_values):
+    process = psutil.Process(os.getpid())
+    pyRAPL.setup()
+    meter = pyRAPL.Measurement('bar')
+    meter.begin()
+    starttime = time.time()
+    while True:
+        time.sleep(10.0 - ((time.time() - starttime) % 10.0))
+        memory_values["memory"] = process.memory_info()[0] / (2 ** 20)
+        meter.end()
+        memory_values["energy"] = meter.result.pkg[0] * 0.00000000028
+        meter.begin()
+
+
+def setup_parallel_trackers(memory_values):
+    server_process = Process(target=track, args=(memory_values,))
+    server_process.start()
+    time.sleep(0.5)
 
 
 def setup_table(metadata):
@@ -83,182 +111,217 @@ def setup_table(metadata):
                        db.Column('Power', db.Float()))
 
 
-class realTimeBenchmarker_pyTorch(Callback):
+class RtBenchPytorch(Callback):
 
-    def __init__(self, no_epochs, input_size, batch_size):
-        pyRAPL.setup()
-        self.meter = pyRAPL.Measurement('bar')
-        self.no_batches = ceil(input_size / batch_size)
-        self.no_epochs = no_epochs
+    def __init__(self):
+        self.no_batches = self.no_epochs = 100
 
-        engine = db.create_engine('sqlite:///logs.db')  # Create
+        engine = db.create_engine('sqlite:///logs.db?check_same_thread=False')
         self.connection = engine.connect()
         metadata = db.MetaData()
-
-        self.logs = db.Table('logs', metadata,
-                             db.Column('Starttime', db.DateTime()),
-                             db.Column('Time', db.Float()),
-                             db.Column('Epoch', db.Integer()),
-                             db.Column('Batch', db.Integer()),
-                             db.Column('Loss', db.Float()),
-                             db.Column('LossTrend', db.Float()),
-                             db.Column('Accuracy', db.Float()),
-                             db.Column('AccuracyTrend', db.Float()),
-                             db.Column('Memory', db.Float()),
-                             db.Column('CPU', db.Float()),
-                             db.Column('Power', db.Float())
-                             )
-
+        self.logs = setup_table(metadata)
         metadata.create_all(engine)
 
         manager = Manager()
         self.metrics = manager.dict()
         live_keys = ["epoch", "no_epochs", "batch", "no_batches", "loss", "loss_trend", "acc", "acc_trend",
-                     "memory", "time", "eta_epoch", "eta_train", "energy", "cpu"]
+                     "memory", "time", "eta_epoch", "eta_train", "energy", "cpu", "phase"]
+        epoch_keys = ["epoch", "loss", "loss_trend", "acc", "acc_trend", "time", "avg_time", "test_loss", "test_acc",
+                      "test_loss_trend", "test_acc_trend"]
+        comparison_keys = ["time", "epoch", "batch", "loss", "loss_trend", "acc", "acc_trend",
+                           "memory", "cpu", "energy", "available"]
         self.metrics["live"] = dict.fromkeys(live_keys)
-        self.metrics["epoch"] = ["---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["epoch"] = dict.fromkeys(epoch_keys)
+        self.metrics["batch_update"] = 1
+        self.metrics["no_batches"] = self.no_batches
         self.metrics["comparison_choice"] = ""
-        self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
+        self.metrics["comparison_options"] = self.get_comparison_options()
+        self.metrics["comparison"] = dict.fromkeys(comparison_keys)
+        self.metrics["comparison"]["available"] = False
 
-        self.webApp = WebApp(self)
-        server_process = Process(target=self.webApp.run, args=(self.metrics,))
-        server_process.start()
-        time.sleep(0.5)
+        self.starttime = self.first_loss = self.first_acc = \
+            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
+            self.energy = self.memory = self.webApp = self.comp_train_loss = self.comp_train_acc = \
+            self.comp_test_loss = self.comp_test_acc = 0
 
-        self.first_loss = 0
-        self.first_acc = 0
         self.process = psutil.Process(os.getpid())
-        self.train_begin_time = 0
-        self.epoch_begin_time = 0
+        pyRAPL.setup()
+        self.meter = pyRAPL.Measurement('bar')
 
-    def getComparisonOptions(self):
+    def get_comparison_options(self):
         query = db.select([self.logs.columns.Starttime.distinct()])
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.fetchall()
         return [r[0] for r in ResultSet]
 
-    def getComparison(self):
-        s = self.metrics["comparison_choice"]
-
+    def get_comparison(self):
         time_comp = time.perf_counter() - self.train_begin_time
-        # query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == '2021-06-03 08:09:12.062038', self.logs.columns.Time > time_comp)).order_by(db.asc(self.logs.columns.Time))
-        query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime == s.replace('T', ' '),
+        query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime ==
+                                                     self.metrics["comparison_choice"],
                                                      self.logs.columns.Time > time_comp)).order_by(
             db.asc(self.logs.columns.Time))
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.first()
 
-        results = []
-
-        if ResultSet is not None:
-            for i in range(len(ResultSet) - 1):
-                results.append(str(ResultSet[i + 1]))
-            self.metrics["comparison"] = results
-        else:
-            self.metrics["comparison"] = ["---", "---", "---", "---", "---", "---", "---", "---", "---", "---"]
-
+        self.metrics["comparison"] = insert_comparison(self.metrics["comparison"], ResultSet)
 
     def on_train_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        self.no_epochs = trainer.max_epochs
+        self.no_batches = self.metrics["no_batches"] = trainer.num_training_batches + trainer.num_val_batches[0]
+        self.webApp = setup_webapp(metrics=self.metrics)
         self.train_begin_time = time.perf_counter()
-        self.starttime = datetime.now()
-
-    def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-        self.webApp.test = batch_idx
+        self.starttime = datetime.now().replace(microsecond=0).isoformat(' ')
+        self.interval = time.time()
+        self.meter.begin()
 
     def on_train_epoch_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
         self.epoch_begin_time = time.perf_counter()
 
+    #def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
+    #    self.meter.begin()
+
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
-        if batch_idx % 20 != 0:
+        if batch_idx%self.metrics["batch_update"] != 0:
             return
-        self.getComparison()
+        if time.time() - self.interval > 1:
+            self.memory = self.process.memory_info()[0] / (2 ** 20)
+            self.meter.end()
+            self.energy = self.meter.result.pkg[0] * 0.00000000028
+            self.interval = time.time()
+            self.meter.begin()
+
+        self.get_comparison()
         loss = outputs["loss"].item()
         acc = outputs["acc"].item()
-        batch=batch_idx
-        current_epoch = trainer.current_epoch
-        #self.meter.end()
-        memory = self.process.memory_info()[0] / (2 ** 20)
         time_epoch = time.perf_counter() - self.epoch_begin_time
         time_train = time.perf_counter() - self.train_begin_time
-        eta_epoch = (time_epoch * self.no_batches / (batch + 1)) - time_epoch
+        eta_epoch = (time_epoch * self.no_batches / (batch_idx+1)) - time_epoch
         eta_train = (time_train * (self.no_epochs * self.no_batches /
-                                   (batch + 1 + (current_epoch) * self.no_batches))) - time_train
-        if batch == 0:
+                           (batch_idx + 1 + trainer.current_epoch * self.no_batches))) - time_train
+        if batch_idx == 0 and trainer.current_epoch == 0:
             self.first_loss = loss
             self.first_acc = acc
         if self.first_loss - loss != 0:
-            loss_trend = int((loss - self.first_loss) / self.first_loss * 100)
-            if loss_trend > 0:
-                loss_trend = "+" + str(loss_trend)
+            loss_trend = int((loss - self.first_loss)/self.first_loss * 100)
         else:
             loss_trend = 0
 
         if self.first_acc - acc != 0:
             acc_trend = int((acc - self.first_acc)/self.first_acc * 100)
-            if acc_trend > 0:
-                acc_trend = "+" + str(acc_trend)
         else:
             acc_trend = 0
 
-        energy = 0.00054
-
-        query = db.insert(self.logs).values(Starttime=self.starttime, Time="%.1f" % time_train,
-                                            Epoch=current_epoch + 1,
-                                            Batch=batch + 1, Loss="%.3f" % loss, LossTrend=loss_trend,
-                                            Accuracy="%.3f" % acc, AccuracyTrend=acc_trend,
-                                            Memory="%.1f" % memory,
+        query = db.insert(self.logs).values(Starttime=self.starttime, Time="%.1f" % time_train, Epoch=trainer.current_epoch + 1,
+                                            Batch=batch_idx + 1, Loss="%.3f" % loss, LossTrend=loss_trend,
+                                            Accuracy="%.3f" % acc, AccuracyTrend=acc_trend, Memory="%.1f" % self.memory,
                                             CPU=psutil.cpu_percent(),
-                                            Power="%.4f" % (energy))
-        ResultProxy = self.connection.execute(query)
-        results = self.connection.execute(db.select([self.logs])).fetchall()
+                                            Power="%.4f" % (self.energy))
+        self.connection.execute(query)
+        self.connection.execute(db.select([self.logs])).fetchall()
 
-        print(self.metrics["live"])
-
-        self.metrics["live"] = [
-            "{:2}/{}".format(current_epoch + 1, self.no_epochs),
-            "{:5}/{}".format(batch + 1, self.no_batches),
-            "{:7.4f}".format(loss),
-            "{}%".format(loss_trend),
-            "{:8.4f}".format(acc),
-            "{}%".format(acc_trend),
-            "{:5.0f}MB ".format(memory),
-            "{:4.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
-            "{:4.0f}m{}s".format(eta_epoch//60,int(eta_epoch%60)),
-            "{:6.0f}m{}s".format(eta_train//60, int(eta_train%60)),
-            "{:6.5f}Wh".format(self.meter.result.pkg[0] * 0.00000000028),
-            "{}%".format(psutil.cpu_percent())
-        ]
+        self.metrics["live"] = insert_live_metrics(metrics=self.metrics["live"],
+                                                   phase="train",
+                                                   current_epoch=trainer.current_epoch + 1,
+                                                   no_epochs=self.no_epochs,
+                                                   current_batch=batch_idx + 1,
+                                                   no_batches=self.no_batches,
+                                                   loss=loss,
+                                                   loss_trend=loss_trend,
+                                                   acc=acc,
+                                                   acc_trend=acc_trend,
+                                                   memory=self.memory,
+                                                   time=time_train,
+                                                   eta_epoch=eta_epoch,
+                                                   eta_train=eta_train,
+                                                   energy=self.energy,
+                                                   cpu=psutil.cpu_percent())
 
     def on_train_epoch_end(self, trainer, pl_module, unused=None):
-        loss = trainer.logged_metrics["train_loss"].item()
-        acc = trainer.logged_metrics["train_acc"].item()
+        #print(self.model.get_weights())
+        print(trainer.logged_metrics)
+        loss = trainer.logged_metrics['loss_epoch'].item()
+        acc = trainer.logged_metrics['acc_epoch'].item()
         time_epoch = time.perf_counter() - self.epoch_begin_time
+        loss_trend = acc_trend = 0
+
+        if trainer.current_epoch != 0:
+            if self.comp_train_loss - loss != 0 and self.comp_train_loss != 0:
+                loss_trend = int((loss - self.comp_train_loss) / self.comp_train_loss * 100)
+            if self.comp_train_acc - acc != 0 and self.comp_train_acc != 0:
+                acc_trend = int((acc - self.comp_train_acc) / self.comp_train_acc * 100)
+
+        self.comp_train_loss = loss
+        self.comp_train_acc = acc
+
+        self.metrics["epoch"] = insert_epoch_summary(metrics=self.metrics["epoch"],
+                                                     current_epoch=trainer.current_epoch + 1,
+                                                     time=time_epoch,
+                                                     loss=loss,
+                                                     avg_time=time_epoch / self.no_batches,
+                                                     loss_trend=loss_trend,
+                                                     acc=acc,
+                                                     acc_trend=acc_trend)
+
+    def on_validation_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        self.interval = time.time()
+
+    def on_validation_end(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        loss = trainer.logged_metrics["val_loss"].item()
+        acc = trainer.logged_metrics["val_acc"].item()
+        loss_trend = acc_trend = 0
+
+        if trainer.current_epoch != 0:
+            if self.comp_test_loss - loss != 0 and self.comp_test_loss != 0:
+                loss_trend = int((loss - self.comp_test_loss) / self.comp_test_loss * 100)
+
+            if self.comp_test_acc - acc != 0 and self.comp_test_acc != 0:
+                acc_trend = int((acc - self.comp_test_acc) / self.comp_test_acc * 100)
+
+        self.comp_test_loss = loss
+        self.comp_test_acc = acc
+
+        self.metrics["epoch"] = insert_test_summary(self.metrics["epoch"], loss=loss, acc=acc,
+                                                    loss_trend=loss_trend, acc_trend=acc_trend)
+
+    def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        if time.time() - self.interval > 1:
+            self.memory = self.process.memory_info()[0] / (2 ** 20)
+            self.meter.end()
+            self.energy = self.meter.result.pkg[0] * 0.00000000028
+            self.interval = time.time()
+            self.meter.begin()
+
+        loss = outputs["val_loss"].item()
+        acc = outputs["val_acc"].item()
+        time_test = time.perf_counter() - self.train_begin_time
+
+        if batch_idx == 0:
+            self.first_loss = loss
+            self.first_acc = acc
         if self.first_loss - loss != 0:
-            loss_trend = int((loss - self.first_loss) / self.first_loss * 100)
-            if loss_trend > 0:
-                loss_trend = "+" + str(loss_trend)
+            loss_trend = int((loss - self.first_loss)/self.first_loss * 100)
         else:
             loss_trend = 0
 
         if self.first_acc - acc != 0:
-            acc_trend = int((acc - self.first_acc) / self.first_acc * 100)
-            if acc_trend > 0:
-                acc_trend = "+" + str(acc_trend)
+            acc_trend = int((acc - self.first_acc)/self.first_acc * 100)
         else:
             acc_trend = 0
 
-        self.metrics["epoch"] = [
-            "{}".format(trainer.current_epoch + 1),
-            "{:2.0f}m{}s".format(time_epoch//60, int(time_epoch%60)),
-            "{:4.2f}s".format(time_epoch / self.no_batches),
-            "{:6.4f}".format(loss),
-            "{}%".format(loss_trend),
-            "{:6.4f}".format(acc),
-            "{}%".format(acc_trend)
-        ]
+        self.metrics["live"] = insert_live_metrics(metrics=self.metrics["live"],
+                                                   phase="test",
+                                                   current_batch=batch_idx + 1,
+                                                   loss=loss,
+                                                   loss_trend=loss_trend,
+                                                   acc=acc,
+                                                   acc_trend=acc_trend,
+                                                   memory=self.memory,
+                                                   time=time_test,
+                                                   energy=self.energy,
+                                                   cpu=psutil.cpu_percent())
 
 
-class realTimeBenchmarker_tensorflow(callbacks.Callback):
+class RtBenchTensorflow(callbacks.Callback):
 
     def __init__(self, input_size, batch_size, no_epochs):
 
@@ -277,28 +340,34 @@ class realTimeBenchmarker_tensorflow(callbacks.Callback):
         self.metrics = manager.dict()
         live_keys = ["epoch", "no_epochs", "batch", "no_batches", "loss", "loss_trend", "acc", "acc_trend",
                      "memory", "time", "eta_epoch", "eta_train", "energy", "cpu", "phase"]
-        epoch_keys = ["epoch", "loss", "loss_trend", "acc", "acc_trend", "time", "avg_time"]
+        epoch_keys = ["epoch", "loss", "loss_trend", "acc", "acc_trend", "time", "avg_time", "test_loss", "test_acc",
+                      "test_loss_trend", "test_acc_trend"]
         comparison_keys = ["time", "epoch", "batch", "loss", "loss_trend", "acc", "acc_trend",
                            "memory", "cpu", "energy", "available"]
         self.metrics["live"] = dict.fromkeys(live_keys)
         self.metrics["epoch"] = dict.fromkeys(epoch_keys)
+        self.metrics["batch_update"] = 1
+        self.metrics["no_batches"] = self.no_batches
         self.metrics["comparison_choice"] = ""
+        self.metrics["comparison_options"] = self.get_comparison_options()
         self.metrics["comparison"] = dict.fromkeys(comparison_keys)
         self.metrics["comparison"]["available"] = False
 
-        self.webApp = setupWebapp(rtb=self, metrics=self.metrics)
+        self.webApp = setup_webapp(metrics=self.metrics)
 
         self.starttime = self.current_epoch = self.first_loss = self.first_acc = \
-            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = 0
+            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
+            self.memory = self.energy = self.comp_train_loss = self.comp_train_acc = \
+            self.comp_test_loss = self.comp_test_acc = 0
         self.process = psutil.Process(os.getpid())
 
-    def getComparisonOptions(self):
+    def get_comparison_options(self):
         query = db.select([self.logs.columns.Starttime.distinct()])
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.fetchall()
         return [r[0] for r in ResultSet]
 
-    def getComparison(self):
+    def get_comparison(self):
         time_comp = time.perf_counter() - self.train_begin_time
         query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime ==
                                                      self.metrics["comparison_choice"],
@@ -312,18 +381,25 @@ class realTimeBenchmarker_tensorflow(callbacks.Callback):
     def on_train_begin(self, logs=None):
         self.train_begin_time = time.perf_counter()
         self.starttime = datetime.now().replace(microsecond=0).isoformat(' ')
+        self.interval = time.time()
+        self.meter.begin()
 
     def on_epoch_begin(self, epoch, logs=None):
         self.current_epoch = epoch
         self.epoch_begin_time = time.perf_counter()
 
-    def on_batch_begin(self, batch, logs=None):
-        self.meter.begin()
-
     def on_train_batch_end(self, batch, logs=None):
-        self.getComparison()
-        self.meter.end()
-        memory = self.process.memory_info()[0] / (2 ** 20)
+        if batch%self.metrics["batch_update"] != 0:
+            return
+        if time.time() - self.interval > 1:
+            self.memory = self.process.memory_info()[0] / (2 ** 20)
+            self.meter.end()
+            if self.meter.result.pkg is not None:
+                self.energy = self.meter.result.pkg[0] * 0.00000000028
+            self.interval = time.time()
+            self.meter.begin()
+
+        self.get_comparison()
         time_epoch = time.perf_counter() - self.epoch_begin_time
         time_train = time.perf_counter() - self.train_begin_time
         eta_epoch = (time_epoch * self.no_batches / (batch+1)) - time_epoch
@@ -344,9 +420,9 @@ class realTimeBenchmarker_tensorflow(callbacks.Callback):
 
         query = db.insert(self.logs).values(Starttime=self.starttime, Time="%.1f" % time_train, Epoch=self.current_epoch + 1,
                                             Batch=batch + 1, Loss="%.3f" % logs["loss"], LossTrend=loss_trend,
-                                            Accuracy="%.3f" % logs["accuracy"], AccuracyTrend=acc_trend, Memory="%.1f" %memory,
+                                            Accuracy="%.3f" % logs["accuracy"], AccuracyTrend=acc_trend, Memory="%.1f" % self.memory,
                                             CPU=psutil.cpu_percent(),
-                                            Power="%.4f" % (self.meter.result.pkg[0] * 0.00000000028))
+                                            Power="%.4f" % self.energy)
         self.connection.execute(query)
         self.connection.execute(db.select([self.logs])).fetchall()
 
@@ -360,47 +436,52 @@ class realTimeBenchmarker_tensorflow(callbacks.Callback):
                                                    loss_trend=loss_trend,
                                                    acc=logs["accuracy"],
                                                    acc_trend=acc_trend,
-                                                   memory=memory,
-                                                   time=time_epoch,
+                                                   memory=self.memory,
+                                                   time=time_train,
                                                    eta_epoch=eta_epoch,
                                                    eta_train=eta_train,
-                                                   energy=self.meter.result.pkg[0] * 0.00000000028,
+                                                   energy=self.energy,
                                                    cpu=psutil.cpu_percent())
 
     def on_epoch_end(self, epoch, logs=None):
-        #print(self.model.get_weights())
         time_epoch = time.perf_counter() - self.epoch_begin_time
-        if self.first_loss - logs["loss"] != 0:
-            loss_trend = int((logs["loss"] - self.first_loss) / self.first_loss * 100)
-        else:
-            loss_trend = 0
 
-        if self.first_acc - logs["accuracy"] != 0:
-            acc_trend = int((logs["accuracy"] - self.first_acc) / self.first_acc * 100)
-        else:
-            acc_trend = 0
+        loss = logs["loss"]
+        acc = logs["accuracy"]
+        loss_trend = acc_trend = 0
 
-        print(epoch)
+        if self.current_epoch != 0:
+            if self.comp_train_loss - loss != 0 and self.comp_train_loss != 0:
+                loss_trend = int((loss - self.comp_train_loss) / self.comp_train_loss * 100)
+            if self.comp_train_acc - acc != 0 and self.comp_train_acc != 0:
+                acc_trend = int((acc - self.comp_train_acc) / self.comp_train_acc * 100)
+
+        self.comp_train_loss = loss
+        self.comp_train_acc = acc
 
         self.metrics["epoch"] = insert_epoch_summary(metrics=self.metrics["epoch"],
                                                      current_epoch=epoch + 1,
                                                      time=time_epoch,
-                                                     loss=logs["loss"],
+                                                     loss=loss,
                                                      avg_time=time_epoch / self.no_batches,
                                                      loss_trend=loss_trend,
-                                                     acc=logs["accuracy"],
+                                                     acc=acc,
                                                      acc_trend=acc_trend)
 
     def on_test_begin(self, logs=None):
-        self.test_begin_time = time.perf_counter()
+        self.interval = time.time()
 
     def on_test_batch_begin(self, batch, logs=None):
         self.meter.begin()
 
     def on_test_batch_end(self, batch, logs=None):
-        self.meter.end()
-        memory = self.process.memory_info()[0] / (2 ** 20)
-        time_test = time.perf_counter() - self.test_begin_time
+        if time.time() - self.interval > 1:
+            self.memory = self.process.memory_info()[0] / (2 ** 20)
+            self.meter.end()
+            self.energy = self.meter.result.pkg[0] * 0.00000000028
+            self.interval = time.time()
+            self.meter.begin()
+        time_test = time.perf_counter() - self.train_begin_time
 
         if batch == 0:
             self.first_loss = logs["loss"]
@@ -422,7 +503,26 @@ class realTimeBenchmarker_tensorflow(callbacks.Callback):
                                                    loss_trend=loss_trend,
                                                    acc=logs["accuracy"],
                                                    acc_trend=acc_trend,
-                                                   memory=memory,
+                                                   memory=self.memory,
                                                    time=time_test,
-                                                   energy=self.meter.result.pkg[0] * 0.00000000028,
+                                                   energy=self.energy,
                                                    cpu=psutil.cpu_percent())
+
+    def on_test_end(self, logs=None):
+        print(logs)
+        loss = logs["loss"]
+        acc = logs["accuracy"]
+        loss_trend = acc_trend = 0
+
+        if self.current_epoch != 0:
+            if self.comp_test_loss - loss != 0 and self.comp_test_loss != 0:
+                loss_trend = int((loss - self.comp_test_loss) / self.comp_test_loss * 100)
+
+            if self.comp_test_acc - acc != 0 and self.comp_test_acc != 0:
+                acc_trend = int((acc - self.comp_test_acc) / self.comp_test_acc * 100)
+
+        self.comp_test_loss = loss
+        self.comp_test_acc = acc
+
+        self.metrics["epoch"] = insert_test_summary(self.metrics["epoch"], loss=logs["loss"], acc=logs["accuracy"],
+                                                    loss_trend=loss_trend, acc_trend=acc_trend)
