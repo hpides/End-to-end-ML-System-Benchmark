@@ -10,19 +10,32 @@ import time
 class WebApp:
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
 
-    def __init__(self, rtb):
-        self.rtb = rtb
+    def __init__(self):
         self.app = dash.Dash(__name__, external_stylesheets=self.external_stylesheets)
-        self.acc_counter = self.loss_counter = 0
+        self.acc_keeps_bad = self.loss_keeps_bad = False
+        self.warning_loss_epoch = self.warning_acc_epoch = self.warning_loss_batch = self.warning_acc_batch = 0
 
     def run(self, metrics, debug=False):
 
-        timestamps = self.rtb.getComparisonOptions()
+        timestamps = metrics["comparison_options"]
 
         self.app.layout = html.Div(
             html.Div([
-                html.H4('Real Time Benchmarker'),
-                html.Div([html.H4("Live feed"), html.P(id='live-update-text')], style={'width': '49%', 'display': 'inline-block'}),
+                html.H4('RtBench'),
+                html.P(id='slider-text'),
+                html.Div([
+                    dcc.Slider(
+                        id='slider',
+                        max=metrics["no_batches"],
+                        min=1,
+                        value=1,
+                        step=0.01,
+                        updatemode='drag'
+                    ),
+                    html.Div(id='updatemode-output-container', style={'margin-top': 20})
+                ], style= {"width": "30%"}),
+                html.Div([html.H4("Live feed"), html.P(id='live-update-text'),
+                          ], style={'height' : "500px", 'width': '49%', 'display': 'inline-block'}),
                 html.Div([html.H4("Comparison with run from ---", id="comparison-title"),
                           html.Div([
                               dcc.Dropdown(
@@ -46,8 +59,12 @@ class WebApp:
                         columns=[{'id': 'epoch', 'name': 'Epoch'},
                                  {'id': 'loss', 'name': 'Loss'},
                                  {'id': 'trend_loss', 'name': 'Trend Loss'},
+                                 {'id': 'test_loss', 'name': 'Test loss'},
+                                 {'id': 'test_loss_trend', 'name': 'Trend test loss'},
                                  {'id': 'acc', 'name': 'Accuracy'},
                                  {'id': 'trend_acc', 'name': 'Trend accuracy'},
+                                 {'id': 'test_acc', 'name': 'Test accuracy'},
+                                 {'id': 'test_acc_trend', 'name': 'Trend test accuracy'},
                                  {'id': 'time', 'name': 'Time taken'},
                                  {'id': 'time_batch', 'name': 'Avg time per batch'}],
                         data=[],
@@ -67,9 +84,8 @@ class WebApp:
 
         @self.app.callback([Output('live-update-text', 'children'),
                             Output('warnings-text', 'children')],
-                           [Input('interval-component', 'n_intervals')],
-                           [State('warnings-text', 'children')])
-        def update_batch(n, warning):
+                           [Input('interval-component', 'n_intervals')])
+        def update_batch(n):
             style = {'padding': '5px', 'fontSize': '16px'}
             live = metrics["live"]
             if live["epoch"] is None:
@@ -78,21 +94,28 @@ class WebApp:
             acc_color = "green"
             if live["loss_trend"] > 0:
                 loss_color = "red"
-                warningtext = "Epoch: {} - Loss has not decreased since {} batches".format(str(live["epoch"]),
-                                                                                           self.loss_counter)
-                self.loss_counter += 1
+                if not self.loss_keeps_bad:
+                    self.warning_loss_epoch = live["epoch"]
+                    self.warning_loss_batch = live["batch"]
+                    self.loss_keeps_bad = True
+                warningtext = "Loss has not decreased since epoch {}, batch {}.".format(self.warning_loss_epoch,
+                                                                                        self.warning_loss_batch)
                 warning = html.P([warningtext, html.Br()])
             else:
-                self.loss_counter = 0
+                self.loss_keeps_bad = False
                 warning = html.P(html.Br())
+
             if live["acc_trend"] < 0:
-                acc_color = "red"
-                warningtext = "Epoch: {} - Accuracy has not increased since {} batches".format(str(live["epoch"]),
-                                                                                               self.acc_counter)
-                self.acc_counter += 1
-                warning = html.P([warning, warningtext, html.Br()])
+                loss_color = "red"
+                if not self.acc_keeps_bad:
+                    self.warning_acc_epoch = live["epoch"]
+                    self.warning_acc_batch = live["batch"]
+                    self.acc_keeps_bad = True
+                warningtext = "Accuracy has not decreased since epoch {}, batch {}.".format(self.warning_acc_epoch,
+                                                                                            self.warning_acc_batch)
+                warning = html.P([warningtext, html.Br()])
             else:
-                self.acc_counter = 0
+                self.acc_keeps_bad = False
 
             time = str(int(live["time"] // 60)) + "m" + str(int(live["time"] % 60)) + "s"
 
@@ -126,6 +149,7 @@ class WebApp:
                 return [
                            html.P(
                                ["Phase: Testing", html.Br(), html.P(),
+                                "Epoch: " + "{:2}/{}".format(live["epoch"], live["no_epochs"]), html.Br(), html.P(),
                                 "Batch: " + "{:5}".format(live["batch"]), html.Br(), html.P(),
                                 "Time spent: " + time, html.Br(), html.P(),
                                 "Loss: " + "{:7.4f}".format(live["loss"]), html.Br(),
@@ -145,49 +169,48 @@ class WebApp:
         @self.app.callback([Output('epoch-summary-text', 'children'),
                             Output('epoch-table', 'data')],
                            [Input('interval-component', 'n_intervals')],
-                           [State('epoch-table', 'data')])
+                           State('epoch-table', 'data'))
         def update_epoch(n, rows):
+            live = metrics["live"]
             style = {'padding': '5px', 'fontSize': '16px'}
             epoch = metrics["epoch"]
 
-            if epoch["epoch"] is None:
+            if epoch["test_loss"] is None or epoch["time"] is None:
                 return html.P(["No epoch has finished so far."], style=style), rows
+            train_loss_trend = train_acc_trend = test_loss_trend = test_acc_trend = "N/A"
+            if len(rows) != 0:
+                test_loss_trend = "{}%".format(epoch["test_loss_trend"])
+                test_acc_trend = "{}%".format(epoch["test_acc_trend"])
+                train_loss_trend = "{}%".format(epoch["loss_trend"])
+                train_acc_trend = "{}%".format(epoch["acc_trend"])
 
-            live = metrics["live"]
-            time = str(int(epoch["time"]//60)) + "m" + str(int(epoch["time"] % 60)) + "s"
+            time = str(int(epoch["time"] // 60)) + "m" + str(int(epoch["time"] % 60)) + "s"
+            if len(rows) + 1 < live["epoch"]:
 
-            if len(rows)+1 < int(live["epoch"]):
                 rows.append({"epoch": "{}".format(epoch["epoch"]),
-                             "loss": "{:6.4f}".format(epoch["loss"]),
-                             "trend_loss": "{}%".format(epoch["loss_trend"]),
-                             "acc": "{:6.4f}".format(epoch["acc"]),
-                             "trend_acc": "{}%".format(epoch["acc_trend"]),
-                             "time": time,
-                             "time_batch": "{:4.2f}s".format(epoch["avg_time"])})
-
-            loss_color = "green"
-            acc_color = "green"
-            if epoch["loss_trend"] > 0:
-                loss_color = "red"
-            if epoch["acc_trend"] < 0:
-                acc_color = "red"
+                                 "loss": "{:6.4f}".format(epoch["loss"]),
+                                 "trend_loss": train_loss_trend,
+                                 "test_loss": "{:6.4f}".format(epoch["test_loss"]),
+                                 "test_loss_trend": test_loss_trend,
+                                 "acc": "{:6.4f}".format(epoch["acc"]),
+                                 "trend_acc": train_acc_trend,
+                                 "test_acc": "{:6.4f}".format(epoch["test_acc"]),
+                                 "test_acc_trend": test_acc_trend,
+                                 "time": time,
+                                 "time_batch": "{:4.2f}s".format(epoch["avg_time"])})
 
             return [
-                html.P(
-                    ["Summary of Epoch " + "{}".format(epoch["epoch"]), html.Br(), html.P(),
-                     "Time taken: " + time, html.Br(), html.P(),
-                     "Time spent on average on batch: " + "{:4.2f}s".format(epoch["avg_time"]), html.Br(), html.P(),
-                     "Loss: " + "{:6.4f}".format(epoch["loss"]), html.Br(),
-                     "    Trend: ", html.P("{}%".format(epoch["loss_trend"]),
-                                                        style={'color': loss_color, "display": "inline"}),
-                                                        html.Br(), html.P(),
-                     "Accuracy: " + "{:6.4f}".format(epoch["acc"]), html.Br(),
-                     "    Trend: ", html.P("{}%".format(epoch["acc_trend"]),
-                                                        style={'color': acc_color, "display": "inline"}),
-                                                        html.Br(), html.P(),
-                     ],
-                    style=style),
-            ], rows
+                    html.P(
+                        ["Summary of Epoch " + "{}".format(epoch["epoch"]), html.Br(), html.P(),
+                         "Time taken: " + time, html.Br(), html.P(),
+                         "Time spent on average on batch: " + "{:4.2f}s".format(epoch["avg_time"]), html.Br(), html.P(),
+                         "Loss: " + "{:6.4f}".format(epoch["loss"]), html.Br(),
+                         "Test loss: " + "{:6.4f}".format(epoch["test_loss"]), html.Br(), html.P(),
+                         "Accuracy: " + "{:6.4f}".format(epoch["acc"]), html.Br(),
+                         "Test accuracy: " + "{:6.4f}".format(epoch["test_acc"]), html.Br(),
+                         ],
+                        style=style),
+                ], rows
 
         @self.app.callback([Output('comparison-text', 'children')],
                            [Input('interval-component', 'n_intervals')])
@@ -217,9 +240,9 @@ class WebApp:
             return [
                 html.P(
 
-                    [html.P("Epoch: " + "{:2}".format(live["epoch"]),
+                    [html.P("Epoch: " + "{:2}".format(comp["epoch"]),
                             style={'color': colors[5], "display": "inline"}), html.Br(), html.P(),
-                     html.P("Batch: " + "{:5}".format(live["batch"]),
+                     html.P("Batch: " + "{:5}".format(comp["batch"]),
                             style={'color': colors[5], "display": "inline"}), html.Br(), html.P(),
                      "Time spent: " + time, html.Br(), html.P(),
                      html.P("Loss: " + "{:6.4f}".format(comp["loss"]) + ",",
@@ -246,4 +269,11 @@ class WebApp:
             metrics["comparison_choice"] = value
             return "Comparison with run from {}".format(value)
 
+        @self.app.callback(Output('slider-text', 'children'),
+                      [Input('slider', 'drag_value'), Input('slider', 'value')])
+        def display_value(drag_value, value):
+            if drag_value is None:
+                drag_value = 1
+            metrics["batch_update"] = int(drag_value)
+            return 'Update every {} batches'.format(int(drag_value))
         self.app.run_server(debug=debug)
