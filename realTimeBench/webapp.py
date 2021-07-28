@@ -149,7 +149,6 @@ class WebApp:
                 return [
                            html.P(
                                ["Phase: Testing", html.Br(), html.P(),
-                                "Epoch: " + "{:2}/{}".format(live["epoch"], live["no_epochs"]), html.Br(), html.P(),
                                 "Batch: " + "{:5}".format(live["batch"]), html.Br(), html.P(),
                                 "Time spent: " + time, html.Br(), html.P(),
                                 "Loss: " + "{:7.4f}".format(live["loss"]), html.Br(),
