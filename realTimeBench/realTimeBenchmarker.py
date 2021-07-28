@@ -114,13 +114,16 @@ def setup_table(metadata):
 class RtBenchPytorch(Callback):
 
     def __init__(self):
-        self.no_batches = self.no_epochs = 100
-
         engine = db.create_engine('sqlite:///logs.db?check_same_thread=False')
         self.connection = engine.connect()
         metadata = db.MetaData()
         self.logs = setup_table(metadata)
         metadata.create_all(engine)
+
+        self.starttime = self.first_loss = self.first_acc = \
+            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
+            self.energy = self.memory = self.webApp = self.comp_train_loss = self.comp_train_acc = \
+            self.comp_test_loss = self.comp_test_acc = self.no_batches = self.no_epochs = 0
 
         manager = Manager()
         self.metrics = manager.dict()
@@ -138,11 +141,6 @@ class RtBenchPytorch(Callback):
         self.metrics["comparison_options"] = self.get_comparison_options()
         self.metrics["comparison"] = dict.fromkeys(comparison_keys)
         self.metrics["comparison"]["available"] = False
-
-        self.starttime = self.first_loss = self.first_acc = \
-            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
-            self.energy = self.memory = self.webApp = self.comp_train_loss = self.comp_train_acc = \
-            self.comp_test_loss = self.comp_test_acc = 0
 
         self.process = psutil.Process(os.getpid())
         pyRAPL.setup()
@@ -166,7 +164,7 @@ class RtBenchPytorch(Callback):
         self.metrics["comparison"] = insert_comparison(self.metrics["comparison"], ResultSet)
 
     def on_train_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
-        self.no_epochs = trainer.max_epochs
+        self.no_epochs = self.metrics["no_epochs"] = trainer.max_epochs
         self.no_batches = self.metrics["no_batches"] = trainer.num_training_batches + trainer.num_val_batches[0]
         self.webApp = setup_webapp(metrics=self.metrics)
         self.train_begin_time = time.perf_counter()
@@ -470,9 +468,6 @@ class RtBenchTensorflow(callbacks.Callback):
 
     def on_test_begin(self, logs=None):
         self.interval = time.time()
-
-    def on_test_batch_begin(self, batch, logs=None):
-        self.meter.begin()
 
     def on_test_batch_end(self, batch, logs=None):
         if time.time() - self.interval > 1:
