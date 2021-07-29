@@ -522,6 +522,83 @@ class RtBenchPytorch(Callback):
             acc_trend = 0
 
         self.metrics["live"] = insert_live_metrics(metrics=self.metrics["live"],
+                                                   phase="validation",
+                                                   current_batch=batch_idx + 1,
+                                                   loss=loss,
+                                                   loss_trend=loss_trend,
+                                                   acc=acc,
+                                                   acc_trend=acc_trend,
+                                                   memory=self.memory,
+                                                   time=time_test,
+                                                   energy=self.energy,
+                                                   cpu=psutil.cpu_percent())
+
+    def on_test_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the start of testing.
+        """
+        self.interval = time.time()
+
+    def on_test_end(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the end of testing.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the loss and accuracy.
+        """
+        loss = trainer.logged_metrics["test_loss"].item()
+        acc = trainer.logged_metrics["test_acc"].item()
+        loss_trend = acc_trend = 0
+
+        if trainer.current_epoch != 0:
+            if self.comp_test_loss - loss != 0 and self.comp_test_loss != 0:
+                loss_trend = int((loss - self.comp_test_loss) / self.comp_test_loss * 100)
+
+            if self.comp_test_acc - acc != 0 and self.comp_test_acc != 0:
+                acc_trend = int((acc - self.comp_test_acc) / self.comp_test_acc * 100)
+
+        self.comp_test_loss = loss
+        self.comp_test_acc = acc
+
+        self.metrics["epoch"] = insert_test_summary(self.metrics["epoch"], loss=loss, acc=acc,
+                                                    loss_trend=loss_trend, acc_trend=acc_trend)
+
+    def on_test_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        """
+            The callback for the end of a testing batch.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the loss and accuracy.
+        """
+        if time.time() - self.interval > 1:
+            self.memory = self.process.memory_info()[0] / (2 ** 20)
+            self.meter.end()
+            self.energy = self.meter.result.pkg[0] * 0.00000000028
+            self.interval = time.time()
+            self.meter.begin()
+
+        loss = outputs["test_loss"].item()
+        acc = outputs["test_acc"].item()
+        time_test = time.perf_counter() - self.train_begin_time
+
+        if batch_idx == 0:
+            self.first_loss = loss
+            self.first_acc = acc
+        if self.first_loss - loss != 0:
+            loss_trend = int((loss - self.first_loss)/self.first_loss * 100)
+        else:
+            loss_trend = 0
+
+        if self.first_acc - acc != 0:
+            acc_trend = int((acc - self.first_acc)/self.first_acc * 100)
+        else:
+            acc_trend = 0
+
+        self.metrics["live"] = insert_live_metrics(metrics=self.metrics["live"],
                                                    phase="test",
                                                    current_batch=batch_idx + 1,
                                                    loss=loss,
