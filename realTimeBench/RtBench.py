@@ -13,6 +13,49 @@ from pytorch_lightning.callbacks import Callback
 
 def insert_live_metrics(metrics, loss, loss_trend, acc, acc_trend, memory, current_batch,
                       time, energy, cpu, phase, current_epoch=0, no_epochs=0, eta_epoch=0, eta_train=0, no_batches=0):
+    """
+        Updates the live metrics.
+
+        Parameters
+        ----------
+        metrics : dict
+            Contains the live metrics.
+        loss : float
+            The current loss.
+        loss_trend : int
+            The current loss trend.
+        acc : float
+            The current accuracy.
+        acc_trend : int
+            The current accuracy trend.
+        memory : float
+            The current memory usage.
+        current_batch : int
+            The current batch
+        time : float
+            The time spent so far.
+        energy : float
+            The current energy usage.
+        cpu : float
+            The current CPU usage.
+        phase : String
+            Training or Testing phase.
+        current_epoch : int
+            The current epoch number.
+        no_epochs : int
+            The total amount of epochs.
+        eta_epoch : float
+            The ETA to finish the epoch.
+        eta_train : float
+            The ETA to finish the trainig phase.
+        no_batches : int
+            The total number of batches.
+
+        Returns
+        -------
+        metrics : dict
+            Contains the live metrics
+    """
     metrics["phase"] = phase
     metrics["epoch"] = current_epoch
     metrics["no_epochs"] = no_epochs
@@ -32,6 +75,33 @@ def insert_live_metrics(metrics, loss, loss_trend, acc, acc_trend, memory, curre
 
 
 def insert_epoch_summary(metrics, current_epoch, time, avg_time, loss, loss_trend, acc, acc_trend):
+    """
+        Updates the epoch summaries' metrics.
+
+        Parameters
+        ----------
+        metrics : dict
+            Contains the epoch summaries' metrics.
+        current_epoch : int
+            The current epoch number.
+        time : float
+            The time spent in the epoch.
+        avg_time : float
+            The average time spent on a batch.
+        loss : float
+            The loss of the epoch.
+        loss_trend : int
+            The loss trend of the epoch.
+        acc : float
+            The accuracy of the epoch.
+        acc_trend : int
+            The accuracy trend of the epoch.
+
+        Returns
+        -------
+        metrics : dict
+            Contains the epoch summaries' metrics
+    """
     metrics["epoch"] = current_epoch
     metrics["time"] = time
     metrics["avg_time"] = avg_time
@@ -43,6 +113,27 @@ def insert_epoch_summary(metrics, current_epoch, time, avg_time, loss, loss_tren
 
 
 def insert_test_summary(metrics, loss, acc, loss_trend, acc_trend):
+    """
+        Updates the test summary.
+
+        Parameters
+        ----------
+        metrics : dict
+            Contains the test summaries' metrics.
+        loss : float
+            The test loss.
+        acc : float
+            The test accuracy.
+        loss_trend : int
+            The test loss trend.
+        acc_trend : int
+            The test accuracy trend.
+
+        Returns
+        -------
+        metrics : dict
+            Contains the test summaries' metrics.
+    """
     metrics["test_loss"] = loss
     metrics["test_acc"] = acc
     metrics["test_loss_trend"] = loss_trend
@@ -51,6 +142,21 @@ def insert_test_summary(metrics, loss, acc, loss_trend, acc_trend):
 
 
 def insert_comparison(metrics, ResultSet):
+    """
+        Updates the comparison run's metrics.
+
+        Parameters
+        ----------
+        metrics : dict
+            Contains the comparisons run's metrics.
+        ResultSet : ResultSet
+            Contains the log table's entries for the comparison run.
+
+        Returns
+        -------
+        metrics : dict
+            Contains the comparisons run's metrics.
+    """
     if ResultSet is not None:
         metrics["available"] = True
         metrics["time"] = ResultSet[1]
@@ -69,6 +175,19 @@ def insert_comparison(metrics, ResultSet):
 
 
 def setup_webapp(metrics):
+    """
+        Initializes the webapp.
+
+        Parameters
+        ----------
+        metrics : dict
+            Contains the shared metrics.
+
+        Returns
+        -------
+        webapp : WebApp
+            The corresponding webapp for visualization.
+    """
     webApp = WebApp()
     server_process = Process(target=webApp.run, args=(metrics,))
     server_process.start()
@@ -76,27 +195,20 @@ def setup_webapp(metrics):
     return webApp
 
 
-def track(memory_values):
-    process = psutil.Process(os.getpid())
-    pyRAPL.setup()
-    meter = pyRAPL.Measurement('bar')
-    meter.begin()
-    starttime = time.time()
-    while True:
-        time.sleep(10.0 - ((time.time() - starttime) % 10.0))
-        memory_values["memory"] = process.memory_info()[0] / (2 ** 20)
-        meter.end()
-        memory_values["energy"] = meter.result.pkg[0] * 0.00000000028
-        meter.begin()
-
-
-def setup_parallel_trackers(memory_values):
-    server_process = Process(target=track, args=(memory_values,))
-    server_process.start()
-    time.sleep(0.5)
-
-
 def setup_table(metadata):
+    """
+        Initializes the logs table.
+
+        Parameters
+        ----------
+        metadata : db.Metadata
+            Contains the table's metadata.
+
+        Returns
+        -------
+        table : db.Table
+            The logs table.
+    """
     return db.Table('logs', metadata,
                        db.Column('Starttime', db.String()),
                        db.Column('Time', db.Float()),
@@ -112,7 +224,54 @@ def setup_table(metadata):
 
 
 class RtBenchPytorch(Callback):
+    """
+        The PyTorch version of the main Benchmarking tool.
 
+        Attributes
+        ----------
+        connection : db.Connection
+            The connection to the database engine.
+        logs : db.Table
+            The database table for logging the metrics.
+        run_begin_time : datetime
+            The starttime of the run. Used to uniquely identify a run.
+        first_loss : int
+            The first loss of an epoch. Needed for trend comparison.
+        first_acc : int
+            The first accuracy of an epoch. Needed for trend comparison.
+        train_begin_time : float
+            The starttime of the training phase.
+        epoch_begin_time : float
+            The starttime of the epoch.
+        test_begin_time : float
+            The starttime of the test phase.
+        interval : float
+            Interval tracker for consistent memory and energy measuring.
+        energy : float
+            Amount of energy used.
+        memory : float
+            Amount of memory used.
+        webapp : WebApp
+            The corresponding webapp for visualization.
+        comp_train_loss : float
+            The training loss of the previous epoch. Needed for trend in the epoch summaries.
+        comp_train_acc : float
+            The training accuracy of the previous epoch. Needed for trend in the epoch summaries.
+        comp_test_loss : float
+            The testing loss of the previous epoch. Needed for trend in the epoch summaries.
+        comp_test_acc : float
+            The testing accuracy of the previous epoch. Needed for trend in the epoch summaries.
+        no_batches : int
+            The total number of batches.
+        no_epochs : int
+            The total number of epochs.
+        metrics : dict
+            All the key metrics to be shared between the webapp and RtBench.
+        process : Process
+            The psutil process for CPU and memory measurement.
+        meter : Measurement
+            The pyRAPL meter for energy measurement.
+    """
     def __init__(self):
         engine = db.create_engine('sqlite:///logs.db?check_same_thread=False')
         self.connection = engine.connect()
@@ -120,7 +279,7 @@ class RtBenchPytorch(Callback):
         self.logs = setup_table(metadata)
         metadata.create_all(engine)
 
-        self.starttime = self.first_loss = self.first_acc = \
+        self.run_begin_time = self.first_loss = self.first_acc = \
             self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
             self.energy = self.memory = self.webApp = self.comp_train_loss = self.comp_train_acc = \
             self.comp_test_loss = self.comp_test_acc = self.no_batches = self.no_epochs = 0
@@ -147,12 +306,23 @@ class RtBenchPytorch(Callback):
         self.meter = pyRAPL.Measurement('bar')
 
     def get_comparison_options(self):
+        """
+            Returns all the available runs available for comparison.
+
+            Returns
+            -------
+            results : datetime[]
+                Array of all the available comparison runs in the database.
+        """
         query = db.select([self.logs.columns.Starttime.distinct()])
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.fetchall()
         return [r[0] for r in ResultSet]
 
     def get_comparison(self):
+        """
+            Updates the comparison run depending on the selection and the current progress of the live run.
+        """
         time_comp = time.perf_counter() - self.train_begin_time
         query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime ==
                                                      self.metrics["comparison_choice"],
@@ -164,21 +334,41 @@ class RtBenchPytorch(Callback):
         self.metrics["comparison"] = insert_comparison(self.metrics["comparison"], ResultSet)
 
     def on_train_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the start of the training.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the amount of epochs and batches.
+        """
         self.no_epochs = self.metrics["no_epochs"] = trainer.max_epochs
         self.no_batches = self.metrics["no_batches"] = trainer.num_training_batches + trainer.num_val_batches[0]
         self.webApp = setup_webapp(metrics=self.metrics)
         self.train_begin_time = time.perf_counter()
-        self.starttime = datetime.now().replace(microsecond=0).isoformat(' ')
+        self.run_begin_time = datetime.now().replace(microsecond=0).isoformat(' ')
         self.interval = time.time()
         self.meter.begin()
 
     def on_train_epoch_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the start of an epoch.
+        """
         self.epoch_begin_time = time.perf_counter()
 
-    #def on_train_batch_start(self, trainer, pl_module, batch, batch_idx, dataloader_idx):
-    #    self.meter.begin()
-
     def on_train_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        """
+            The callback for the end of a batch.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get current epoch.
+            outputs : dict
+                Contains the metrics.
+            batch_idx : int
+                The current batch number.
+        """
         if batch_idx%self.metrics["batch_update"] != 0:
             return
         if time.time() - self.interval > 1:
@@ -209,7 +399,7 @@ class RtBenchPytorch(Callback):
         else:
             acc_trend = 0
 
-        query = db.insert(self.logs).values(Starttime=self.starttime, Time="%.1f" % time_train, Epoch=trainer.current_epoch + 1,
+        query = db.insert(self.logs).values(Starttime=self.run_begin_time, Time="%.1f" % time_train, Epoch=trainer.current_epoch + 1,
                                             Batch=batch_idx + 1, Loss="%.3f" % loss, LossTrend=loss_trend,
                                             Accuracy="%.3f" % acc, AccuracyTrend=acc_trend, Memory="%.1f" % self.memory,
                                             CPU=psutil.cpu_percent(),
@@ -235,8 +425,14 @@ class RtBenchPytorch(Callback):
                                                    cpu=psutil.cpu_percent())
 
     def on_train_epoch_end(self, trainer, pl_module, unused=None):
-        #print(self.model.get_weights())
-        print(trainer.logged_metrics)
+        """
+            The callback for the end of an epoch.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the loss and accuracy and current epoch.
+        """
         loss = trainer.logged_metrics['loss_epoch'].item()
         acc = trainer.logged_metrics['acc_epoch'].item()
         time_epoch = time.perf_counter() - self.epoch_begin_time
@@ -261,9 +457,20 @@ class RtBenchPytorch(Callback):
                                                      acc_trend=acc_trend)
 
     def on_validation_start(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the start of the validation.
+        """
         self.interval = time.time()
 
     def on_validation_end(self, trainer: 'pl.Trainer', pl_module: 'pl.LightningModule') -> None:
+        """
+            The callback for the end of the validation.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the loss and accuracy.
+        """
         loss = trainer.logged_metrics["val_loss"].item()
         acc = trainer.logged_metrics["val_acc"].item()
         loss_trend = acc_trend = 0
@@ -282,6 +489,14 @@ class RtBenchPytorch(Callback):
                                                     loss_trend=loss_trend, acc_trend=acc_trend)
 
     def on_validation_batch_end(self, trainer, pl_module, outputs, batch, batch_idx, dataloader_idx):
+        """
+            The callback for the end of a validation batch.
+
+            Parameters
+            ----------
+            trainer : pl.Trainer
+                The pyTorch trainer. Needed to get the loss and accuracy.
+        """
         if time.time() - self.interval > 1:
             self.memory = self.process.memory_info()[0] / (2 ** 20)
             self.meter.end()
@@ -320,13 +535,65 @@ class RtBenchPytorch(Callback):
 
 
 class RtBenchTensorflow(callbacks.Callback):
+    """
+        The Tensorflow version of the main Benchmarking tool.
 
+        Attributes
+        ----------
+        connection : db.Connection
+            The connection to the database engine.
+        logs : db.Table
+            The database table for logging the metrics.
+        run_begin_time : datetime
+            The starttime of the run. Used to uniquely identify a run.
+        first_loss : int
+            The first loss of an epoch. Needed for trend comparison.
+        first_acc : int
+            The first accuracy of an epoch. Needed for trend comparison.
+        train_begin_time : float
+            The starttime of the training phase.
+        epoch_begin_time : float
+            The starttime of the epoch.
+        test_begin_time : float
+            The starttime of the test phase.
+        interval : float
+            Interval tracker for consistent memory and energy measuring.
+        energy : float
+            Amount of energy used.
+        memory : float
+            Amount of memory used.
+        webapp : WebApp
+            The corresponding webapp for visualization.
+        comp_train_loss : float
+            The training loss of the previous epoch. Needed for trend in the epoch summaries.
+        comp_train_acc : float
+            The training accuracy of the previous epoch. Needed for trend in the epoch summaries.
+        comp_test_loss : float
+            The testing loss of the previous epoch. Needed for trend in the epoch summaries.
+        comp_test_acc : float
+            The testing accuracy of the previous epoch. Needed for trend in the epoch summaries.
+        no_batches : int
+            The total number of batches.
+        no_epochs : int
+            The total number of epochs.
+        metrics : dict
+            All the key metrics to be shared between the webapp and RtBench.
+        process : Process
+            The psutil process for CPU and memory measurement.
+        meter : Measurement
+            The pyRAPL meter for energy measurement.
+    """
     def __init__(self, input_size, batch_size, no_epochs):
 
         self.no_batches = ceil(input_size / batch_size)
         self.no_epochs = no_epochs
         pyRAPL.setup()
         self.meter = pyRAPL.Measurement('bar')
+
+        self.run_begin_time = self.current_epoch = self.first_loss = self.first_acc = \
+            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
+            self.memory = self.energy = self.comp_train_loss = self.comp_train_acc = \
+            self.comp_test_loss = self.comp_test_acc = 0
 
         engine = db.create_engine('sqlite:///logs.db')
         self.connection = engine.connect()
@@ -352,20 +619,26 @@ class RtBenchTensorflow(callbacks.Callback):
         self.metrics["comparison"]["available"] = False
 
         self.webApp = setup_webapp(metrics=self.metrics)
-
-        self.starttime = self.current_epoch = self.first_loss = self.first_acc = \
-            self.train_begin_time = self.epoch_begin_time = self.test_begin_time = self.interval = \
-            self.memory = self.energy = self.comp_train_loss = self.comp_train_acc = \
-            self.comp_test_loss = self.comp_test_acc = 0
         self.process = psutil.Process(os.getpid())
 
     def get_comparison_options(self):
+        """
+            Returns all the available runs available for comparison.
+
+            Returns
+            -------
+            results : datetime[]
+                Array of all the available comparison runs in the database.
+        """
         query = db.select([self.logs.columns.Starttime.distinct()])
         ResultProxy = self.connection.execute(query)
         ResultSet = ResultProxy.fetchall()
         return [r[0] for r in ResultSet]
 
     def get_comparison(self):
+        """
+            Updates the comparison run depending on the selection and the current progress of the live run.
+        """
         time_comp = time.perf_counter() - self.train_begin_time
         query = db.select([self.logs]).where(db.and_(self.logs.columns.Starttime ==
                                                      self.metrics["comparison_choice"],
@@ -377,16 +650,44 @@ class RtBenchTensorflow(callbacks.Callback):
         self.metrics["comparison"] = insert_comparison(self.metrics["comparison"], ResultSet)
 
     def on_train_begin(self, logs=None):
+        """
+            The callback for the start of training.
+
+            Parameters
+            ----------
+            logs : dict
+                Contains the metrics.
+        """
         self.train_begin_time = time.perf_counter()
-        self.starttime = datetime.now().replace(microsecond=0).isoformat(' ')
+        self.run_begin_time = datetime.now().replace(microsecond=0).isoformat(' ')
         self.interval = time.time()
         self.meter.begin()
 
     def on_epoch_begin(self, epoch, logs=None):
+        """
+            The callback for the start of an epoch.
+
+            Parameters
+            ----------
+            epoch : int
+                The current epoch number.
+            logs : dict
+                Contains the metrics.
+        """
         self.current_epoch = epoch
         self.epoch_begin_time = time.perf_counter()
 
     def on_train_batch_end(self, batch, logs=None):
+        """
+            The callback for the end of a batch.
+
+            Parameters
+            ----------
+            batch : int
+                The current batch number.
+            logs : dict
+                Contains the metrics.
+        """
         if batch%self.metrics["batch_update"] != 0:
             return
         if time.time() - self.interval > 1:
@@ -416,7 +717,7 @@ class RtBenchTensorflow(callbacks.Callback):
         else:
             acc_trend = 0
 
-        query = db.insert(self.logs).values(Starttime=self.starttime, Time="%.1f" % time_train, Epoch=self.current_epoch + 1,
+        query = db.insert(self.logs).values(Starttime=self.run_begin_time, Time="%.1f" % time_train, Epoch=self.current_epoch + 1,
                                             Batch=batch + 1, Loss="%.3f" % logs["loss"], LossTrend=loss_trend,
                                             Accuracy="%.3f" % logs["accuracy"], AccuracyTrend=acc_trend, Memory="%.1f" % self.memory,
                                             CPU=psutil.cpu_percent(),
@@ -442,6 +743,16 @@ class RtBenchTensorflow(callbacks.Callback):
                                                    cpu=psutil.cpu_percent())
 
     def on_epoch_end(self, epoch, logs=None):
+        """
+            The callback for the end of an epoch.
+
+            Parameters
+            ----------
+            epoch : int
+                The current epoch number.
+            logs : dict
+                Contains the metrics.
+        """
         time_epoch = time.perf_counter() - self.epoch_begin_time
 
         loss = logs["loss"]
@@ -467,9 +778,27 @@ class RtBenchTensorflow(callbacks.Callback):
                                                      acc_trend=acc_trend)
 
     def on_test_begin(self, logs=None):
+        """
+            The callback for the start of testing.
+
+            Parameters
+            ----------
+            logs : dict
+                Contains the metrics.
+        """
         self.interval = time.time()
 
     def on_test_batch_end(self, batch, logs=None):
+        """
+            The callback for the end of a test batch.
+
+            Parameters
+            ----------
+            batch : int
+                The current batch number.
+            logs : dict
+                Contains the metrics.
+        """
         if time.time() - self.interval > 1:
             self.memory = self.process.memory_info()[0] / (2 ** 20)
             self.meter.end()
@@ -504,7 +833,14 @@ class RtBenchTensorflow(callbacks.Callback):
                                                    cpu=psutil.cpu_percent())
 
     def on_test_end(self, logs=None):
-        print(logs)
+        """
+            The callback for the end of testing.
+
+            Parameters
+            ----------
+            logs : dict
+                Contains the metrics.
+        """
         loss = logs["loss"]
         acc = logs["accuracy"]
         loss_trend = acc_trend = 0
