@@ -3,20 +3,46 @@ import dash_core_components as dcc
 import dash_html_components as html
 from dash.dependencies import Input, Output, State
 import dash_table
-import multiprocessing
-import time
 
 
 class WebApp:
     external_stylesheets = ['https://codepen.io/chriddyp/pen/bWLwgP.css']
+    """
+        The webapp for visualization.
 
+        Attributes
+        ----------
+        app : Dash
+            The dash webapp.
+        acc_keeps_bad : Boolean
+            Used for tracking the accuracy warnings.
+        loss_keeps_bad : Boolean
+            Used for tracking the loss warnings.
+        warning_loss_epoch : int
+            Epoch number of the start of the warning. Used for formatting the warning.     
+        warning_acc_epoch : int
+            Epoch number of the start of the warning. Used for formatting the warning.    
+        warning_loss_batch : int
+            Batch number of the start of the warning. Used for formatting the warning.    
+        warning_acc_batch : int
+            Batch number of the start of the warning. Used for formatting the warning.                
+    """
     def __init__(self):
         self.app = dash.Dash(__name__, external_stylesheets=self.external_stylesheets)
         self.acc_keeps_bad = self.loss_keeps_bad = False
         self.warning_loss_epoch = self.warning_acc_epoch = self.warning_loss_batch = self.warning_acc_batch = 0
 
     def run(self, metrics, debug=False):
+        """
+            Runs the webapp.
 
+            Parameters
+            ----------
+            metrics : dict
+                Contains the shared metrics.
+            debug : Boolean
+                Toggles the debug mode.
+        """
         timestamps = metrics["comparison_options"]
 
         self.app.layout = html.Div(
@@ -76,7 +102,7 @@ class WebApp:
                 ]),
                 dcc.Interval(
                     id='interval-component',
-                    interval=1 * 1000,  # in milliseconds
+                    interval=1 * 1000,
                     n_intervals=0
                 ),
             ])
@@ -86,6 +112,9 @@ class WebApp:
                             Output('warnings-text', 'children')],
                            [Input('interval-component', 'n_intervals')])
         def update_batch(n):
+            """
+                Updates the live metrics.
+            """
             style = {'padding': '5px', 'fontSize': '16px'}
             live = metrics["live"]
             if live["epoch"] is None:
@@ -170,6 +199,9 @@ class WebApp:
                            [Input('interval-component', 'n_intervals')],
                            State('epoch-table', 'data'))
         def update_epoch(n, rows):
+            """
+                Updates the epoch summary.
+            """
             live = metrics["live"]
             style = {'padding': '5px', 'fontSize': '16px'}
             epoch = metrics["epoch"]
@@ -214,6 +246,9 @@ class WebApp:
         @self.app.callback([Output('comparison-text', 'children')],
                            [Input('interval-component', 'n_intervals')])
         def update_comparison(n):
+            """
+                Updates the comparison run.
+            """
             style = {'padding': '5px', 'fontSize': '16px'}
             comp = metrics["comparison"]
             if not comp["available"]:
@@ -263,6 +298,9 @@ class WebApp:
             dash.dependencies.Output('comparison-title', 'children'),
             [dash.dependencies.Input('comparison-dropdown', 'value')])
         def update_output(value):
+            """
+                Updates formatting of the comparison run choice title.
+            """
             if isinstance(value, list):
                 return "Comparison with run from ---"
             metrics["comparison_choice"] = value
@@ -271,6 +309,9 @@ class WebApp:
         @self.app.callback(Output('slider-text', 'children'),
                       [Input('slider', 'drag_value'), Input('slider', 'value')])
         def display_value(drag_value, value):
+            """
+                Updates formatting of the drag slider title.
+            """
             if drag_value is None:
                 drag_value = 1
             metrics["batch_update"] = int(drag_value)
