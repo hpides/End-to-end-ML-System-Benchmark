@@ -1,0 +1,369 @@
+
+<!DOCTYPE html>
+
+<html>
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Module reference &#8212; umlaut 1.0.0 documentation</title>
+    <link rel="stylesheet" type="text/css" href="_static/pygments.css" />
+    <link rel="stylesheet" type="text/css" href="_static/alabaster.css" />
+    <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+    <script src="_static/jquery.js"></script>
+    <script src="_static/underscore.js"></script>
+    <script src="_static/doctools.js"></script>
+    <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="prev" title="Hello World" href="stub_example.html" />
+   
+  <link rel="stylesheet" href="_static/custom.css" type="text/css" />
+  
+  
+  <meta name="viewport" content="width=device-width, initial-scale=0.9, maximum-scale=0.9" />
+
+  </head><body>
+  
+
+    <div class="document">
+      <div class="documentwrapper">
+        <div class="bodywrapper">
+          
+
+          <div class="body" role="main">
+            
+  <div class="section" id="module-reference">
+<h1>Module reference<a class="headerlink" href="#module-reference" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="module-umlaut.Benchmark">
+<span id="umlaut-benchmark"></span><h2>umlaut.Benchmark<a class="headerlink" href="#module-umlaut.Benchmark" title="Permalink to this headline">¶</a></h2>
+<p>A class that manages the database entries for the measured metrics which are logged into the database.</p>
+<div class="section" id="parameters">
+<h3>Parameters<a class="headerlink" href="#parameters" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>db_file<span class="classifier">str</span></dt><dd><p>The path of the database file</p>
+</dd>
+<dt>description<span class="classifier">str, optional</span></dt><dd><p>The description of the whole pipeline use case. Even though the description is optional, it should be set
+so the database entries are distinguishable without evaluating the uuid’s.
+This parameter is ignored for Benchmark objects initialized in mode ‘r’.</p>
+</dd>
+<dt>mode<span class="classifier">str, default=’a’</span></dt><dd><p>One of [‘w’, ‘a’, ‘r’]. The mode corresponds to conventional python file handling modes.
+Modes ‘a’ and ‘w’ are used for storing metrics in a database during a pipeline run
+and ‘r’ is used for querying metrics from the database.</p>
+</dd>
+</dl>
+</div>
+<div class="section" id="attributes">
+<h3>Attributes<a class="headerlink" href="#attributes" title="Permalink to this headline">¶</a></h3>
+<dl class="simple">
+<dt>db_file<span class="classifier">str</span></dt><dd><p>path to the database file</p>
+</dd>
+<dt>mode<span class="classifier">str</span></dt><dd><p>mode of the Benchmark object. One of [‘w’, ‘a’, ‘r’].</p>
+</dd>
+<dt>description<span class="classifier">str</span></dt><dd><p>description of the pipeline run. Not relevant if mode is ‘r’.</p>
+</dd>
+<dt>session<span class="classifier">sqlalchemy.orm.session.Session</span></dt><dd><p>SQLalchemy session</p>
+</dd>
+</dl>
+</div>
+</div>
+<div class="section" id="metrics">
+<h2>Metrics<a class="headerlink" href="#metrics" title="Permalink to this headline">¶</a></h2>
+<div class="section" id="supervised-metrics">
+<h3>Supervised metrics<a class="headerlink" href="#supervised-metrics" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.BenchmarkSupervisor">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">BenchmarkSupervisor</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">metrics</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.BenchmarkSupervisor" title="Permalink to this definition">¶</a></dt>
+<dd><p>A supervisor object managing all supervised metrics</p>
+<p>This object should be used as a decorator.</p>
+<dl class="simple">
+<dt>metrics: list of Metric</dt><dd><p>A list of metrics to be collected while running the decorated function</p>
+</dd>
+<dt>benchmark: Benchmark</dt><dd><p>The central benchmark object used in the pipeline</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.CPUMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">CPUMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.CPUMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure CPU usage of the running Python instance in percent</p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+<dt>interval: int, default=1</dt><dd><p>The number of seconds between CPU usage measurements</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.ThroughputMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">ThroughputMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.ThroughputMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure throughput of the pipeline function</p>
+<p>To pass the number of data points processed, use method <cite>track()</cite></p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.LatencyMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">LatencyMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.LatencyMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure latency of the pipeline function</p>
+<p>To pass the number of data points processed, use method <cite>track()</cite></p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.PowerMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">PowerMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.PowerMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure power used in the execution</p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+<dt>interval: int, default=1</dt><dd><p>The number of seconds between memory measurements</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.EnergyMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">EnergyMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.EnergyMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure energy used in the execution</p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.MemoryMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">MemoryMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">interval</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">1</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.MemoryMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure memory used in the execution</p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+<dt>interval: int, default=1</dt><dd><p>The number of seconds between memory measurements</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.TimeMetric">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">TimeMetric</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.TimeMetric" title="Permalink to this definition">¶</a></dt>
+<dd><p>The metric object to measure the time taken for the execution</p>
+<dl class="simple">
+<dt>description: str</dt><dd><p>The description of this metric and function which is added to the database</p>
+</dd>
+</dl>
+</dd></dl>
+
+</div>
+<div class="section" id="tracked-metrics">
+<h3>Tracked metrics<a class="headerlink" href="#tracked-metrics" title="Permalink to this headline">¶</a></h3>
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.LossTracker">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">LossTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.LossTracker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="umlaut.LossTracker.serialize">
+<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_values</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.LossTracker.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>loss_values<span class="classifier">list of ints</span></dt><dd><p>List of tracked loss values of the run.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>pickle object</dt><dd><p>Serialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umlaut.LossTracker.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">loss_values</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.LossTracker.track" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>loss_values<span class="classifier">list of ints</span></dt><dd><p>List of tracked loss values of the run.</p>
+</dd>
+<dt>description<span class="classifier">str</span></dt><dd><p>Description of tracked loss.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.TTATracker">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">TTATracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.TTATracker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="umlaut.TTATracker.serialize">
+<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accuracies</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.TTATracker.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>accuracies<span class="classifier">list of ints</span></dt><dd><p>List of tracked accuracies of the run.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>pickle object</dt><dd><p>Serialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umlaut.TTATracker.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">accuracies</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.TTATracker.track" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>accuracies<span class="classifier">list of ints</span></dt><dd><p>List of tracked accuracies of the run.</p>
+</dd>
+<dt>description<span class="classifier">str</span></dt><dd><p>Description of tracked TTA.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.HyperparameterTracker">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">HyperparameterTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">hyperparameters</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">target</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">low_means_good</span></span><span class="o"><span class="pre">=</span></span><span class="default_value"><span class="pre">True</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.HyperparameterTracker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="umlaut.HyperparameterTracker.serialize">
+<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.HyperparameterTracker.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>pickle object</dt><dd><p>Serialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umlaut.HyperparameterTracker.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">measurement</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.HyperparameterTracker.track" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>measurement<span class="classifier">list of str</span></dt><dd><p>List of hyperparameters</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+<dl class="py class">
+<dt class="sig sig-object py" id="umlaut.ConfusionMatrixTracker">
+<em class="property"><span class="pre">class</span> </em><span class="sig-prename descclassname"><span class="pre">umlaut.</span></span><span class="sig-name descname"><span class="pre">ConfusionMatrixTracker</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">benchmark</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.ConfusionMatrixTracker" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="py method">
+<dt class="sig sig-object py" id="umlaut.ConfusionMatrixTracker.serialize">
+<span class="sig-name descname"><span class="pre">serialize</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.ConfusionMatrixTracker.serialize" title="Permalink to this definition">¶</a></dt>
+<dd><dl class="simple">
+<dt>matrix<span class="classifier">list of list of ints</span></dt><dd><p>Tracker matrix values.</p>
+</dd>
+<dt>labels<span class="classifier">list of str</span></dt><dd><p>Class labels of confustion matrix.</p>
+</dd>
+</dl>
+<dl class="simple">
+<dt>pickle object</dt><dd><p>Serialized data.</p>
+</dd>
+</dl>
+</dd></dl>
+
+<dl class="py method">
+<dt class="sig sig-object py" id="umlaut.ConfusionMatrixTracker.track">
+<span class="sig-name descname"><span class="pre">track</span></span><span class="sig-paren">(</span><em class="sig-param"><span class="n"><span class="pre">matrix</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">labels</span></span></em>, <em class="sig-param"><span class="n"><span class="pre">description</span></span></em><span class="sig-paren">)</span><a class="headerlink" href="#umlaut.ConfusionMatrixTracker.track" title="Permalink to this definition">¶</a></dt>
+<dd><p>Pass an ndarray where axis 0 is predicted and axis 1 is actual.</p>
+<dl class="simple">
+<dt>matrix<span class="classifier">list of list of ints</span></dt><dd><p>Tracker matrix values.</p>
+</dd>
+<dt>labels<span class="classifier">list of str</span></dt><dd><p>Class labels of confusion matrix.</p>
+</dd>
+<dt>description:</dt><dd><p>Description of tracked confusion matrix.</p>
+</dd>
+</dl>
+</dd></dl>
+
+</dd></dl>
+
+</div>
+</div>
+</div>
+
+
+          </div>
+          
+        </div>
+      </div>
+      <div class="sphinxsidebar" role="navigation" aria-label="main navigation">
+        <div class="sphinxsidebarwrapper">
+            <p class="logo"><a href="index.html">
+              <img class="logo" src="_static/logo.png" alt="Logo"/>
+            </a></p>
+<h1 class="logo"><a href="index.html">umlaut</a></h1>
+
+
+
+
+
+
+
+
+<h3>Navigation</h3>
+<ul class="current">
+<li class="toctree-l1"><a class="reference internal" href="stub_example.html">Example usage</a></li>
+<li class="toctree-l1 current"><a class="current reference internal" href="#">Module reference</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#module-umlaut.Benchmark">umlaut.Benchmark</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#parameters">Parameters</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#attributes">Attributes</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#metrics">Metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#supervised-metrics">Supervised metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#tracked-metrics">Tracked metrics</a></li>
+</ul>
+</li>
+</ul>
+</li>
+</ul>
+
+<div class="relations">
+<h3>Related Topics</h3>
+<ul>
+  <li><a href="index.html">Documentation overview</a><ul>
+      <li>Previous: <a href="stub_example.html" title="previous chapter">Hello World</a></li>
+  </ul></li>
+</ul>
+</div>
+<div id="searchbox" style="display: none" role="search">
+  <h3 id="searchlabel">Quick search</h3>
+    <div class="searchformwrapper">
+    <form class="search" action="search.html" method="get">
+      <input type="text" name="q" aria-labelledby="searchlabel" autocomplete="off" autocorrect="off" autocapitalize="off" spellcheck="false"/>
+      <input type="submit" value="Go" />
+    </form>
+    </div>
+</div>
+<script>$('#searchbox').show(0);</script>
+
+
+
+
+
+
+
+
+        </div>
+      </div>
+      <div class="clearer"></div>
+    </div>
+    <div class="footer">
+      &copy;2021, Jonas Schulze, Willi Rieck, Christian Jacob, Jost Morgenstern.
+      
+      |
+      Powered by <a href="http://sphinx-doc.org/">Sphinx 4.1.2</a>
+      &amp; <a href="https://github.com/bitprophet/alabaster">Alabaster 0.7.12</a>
+      
+      |
+      <a href="_sources/moduleref.rst.txt"
+          rel="nofollow">Page source</a>
+    </div>
+
+    
+
+    
+  </body>
+</html>
