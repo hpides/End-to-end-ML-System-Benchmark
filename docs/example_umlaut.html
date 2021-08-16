@@ -1,0 +1,723 @@
+
+
+<!DOCTYPE html>
+<html class="writer-html5" lang="en" >
+<head>
+  <meta charset="utf-8" />
+  
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  
+  <title>How to use Umlaut &mdash; umlaut 1.0.0 documentation</title>
+  
+
+  
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/pygments.css" type="text/css" />
+  <link rel="stylesheet" href="_static/css/theme.css" type="text/css" />
+
+  
+  
+
+  
+  
+
+  
+
+  
+  <!--[if lt IE 9]>
+    <script src="_static/js/html5shiv.min.js"></script>
+  <![endif]-->
+  
+    
+      <script type="text/javascript" id="documentation_options" data-url_root="./" src="_static/documentation_options.js"></script>
+        <script data-url_root="./" id="documentation_options" src="_static/documentation_options.js"></script>
+        <script src="_static/jquery.js"></script>
+        <script src="_static/underscore.js"></script>
+        <script src="_static/doctools.js"></script>
+        <script crossorigin="anonymous" integrity="sha256-Ae2Vz/4ePdIu6ZyI/5ZGsYnb+m0JlOmKPjt6XZ9JJkA=" src="https://cdnjs.cloudflare.com/ajax/libs/require.js/2.3.4/require.min.js"></script>
+        <script async="async" src="https://cdn.jsdelivr.net/npm/mathjax@3/es5/tex-mml-chtml.js"></script>
+        <script>window.MathJax = {"tex": {"inlineMath": [["$", "$"], ["\\(", "\\)"]], "processEscapes": true}, "options": {"ignoreHtmlClass": "tex2jax_ignore|mathjax_ignore|document", "processHtmlClass": "tex2jax_process|mathjax_process|math|output_area"}}</script>
+    
+    <script type="text/javascript" src="_static/js/theme.js"></script>
+
+    
+    <link rel="index" title="Index" href="genindex.html" />
+    <link rel="search" title="Search" href="search.html" />
+    <link rel="next" title="Module reference" href="moduleref.html" />
+    <link rel="prev" title="Welcome to Umlaut" href="index.html" /> 
+</head>
+
+<body class="wy-body-for-nav">
+
+   
+  <div class="wy-grid-for-nav">
+    
+    <nav data-toggle="wy-nav-shift" class="wy-nav-side">
+      <div class="wy-side-scroll">
+        <div class="wy-side-nav-search" >
+          
+
+          
+            <a href="index.html">
+          
+
+          
+            
+            <img src="_static/logo_white.png" class="logo" alt="Logo"/>
+          
+          </a>
+
+          
+            
+            
+          
+
+          
+<div role="search">
+  <form id="rtd-search-form" class="wy-form" action="search.html" method="get">
+    <input type="text" name="q" placeholder="Search docs" />
+    <input type="hidden" name="check_keywords" value="yes" />
+    <input type="hidden" name="area" value="default" />
+  </form>
+</div>
+
+          
+        </div>
+
+        
+        <div class="wy-menu wy-menu-vertical" data-spy="affix" role="navigation" aria-label="main navigation">
+          
+            
+            
+              
+            
+            
+              <ul class="current">
+<li class="toctree-l1 current"><a class="current reference internal" href="#">How to use Umlaut</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#Import-desired-metrics">Import desired metrics</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Initializing-the-benchmark-object">Initializing the benchmark object</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Two-kinds-of-metrics">Two kinds of metrics</a><ul>
+<li class="toctree-l3"><a class="reference internal" href="#Supervised-metrics">Supervised metrics</a></li>
+<li class="toctree-l3"><a class="reference internal" href="#Valued-metrics">Valued metrics</a></li>
+</ul>
+</li>
+<li class="toctree-l2"><a class="reference internal" href="#Collect-measurements">Collect measurements</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Visualize-results">Visualize results</a></li>
+<li class="toctree-l2"><a class="reference internal" href="#Hyperparameter-Tracking">Hyperparameter Tracking</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="#Troubleshooting">Troubleshooting</a><ul>
+<li class="toctree-l2"><a class="reference internal" href="#PyRAPL-(Intel)---No-Access">PyRAPL (Intel) - No Access</a></li>
+</ul>
+</li>
+<li class="toctree-l1"><a class="reference internal" href="moduleref.html">Module reference</a></li>
+</ul>
+
+            
+          
+        </div>
+        
+      </div>
+    </nav>
+
+    <section data-toggle="wy-nav-shift" class="wy-nav-content-wrap">
+
+      
+      <nav class="wy-nav-top" aria-label="top navigation">
+        
+          <i data-toggle="wy-nav-top" class="fa fa-bars"></i>
+          <a href="index.html">umlaut</a>
+        
+      </nav>
+
+
+      <div class="wy-nav-content">
+        
+        <div class="rst-content">
+        
+          
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+<div role="navigation" aria-label="breadcrumbs navigation">
+
+  <ul class="wy-breadcrumbs">
+    
+      <li><a href="index.html" class="icon icon-home"></a> &raquo;</li>
+        
+      <li>How to use Umlaut</li>
+    
+    
+      <li class="wy-breadcrumbs-aside">
+        
+          
+            <a href="_sources/example_umlaut.ipynb.txt" rel="nofollow"> View page source</a>
+          
+        
+      </li>
+    
+  </ul>
+
+  
+  <hr/>
+</div>
+          <div role="main" class="document" itemscope="itemscope" itemtype="http://schema.org/Article">
+           <div itemprop="articleBody">
+            
+  
+<style>
+/* CSS for nbsphinx extension */
+
+/* remove conflicting styling from Sphinx themes */
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt *,
+div.nbinput.container div.input_area pre,
+div.nboutput.container div.output_area pre,
+div.nbinput.container div.input_area .highlight,
+div.nboutput.container div.output_area .highlight {
+    border: none;
+    padding: 0;
+    margin: 0;
+    box-shadow: none;
+}
+
+div.nbinput.container > div[class*=highlight],
+div.nboutput.container > div[class*=highlight] {
+    margin: 0;
+}
+
+div.nbinput.container div.prompt *,
+div.nboutput.container div.prompt * {
+    background: none;
+}
+
+div.nboutput.container div.output_area .highlight,
+div.nboutput.container div.output_area pre {
+    background: unset;
+}
+
+div.nboutput.container div.output_area div.highlight {
+    color: unset;  /* override Pygments text color */
+}
+
+/* avoid gaps between output lines */
+div.nboutput.container div[class*=highlight] pre {
+    line-height: normal;
+}
+
+/* input/output containers */
+div.nbinput.container,
+div.nboutput.container {
+    display: -webkit-flex;
+    display: flex;
+    align-items: flex-start;
+    margin: 0;
+    width: 100%;
+}
+@media (max-width: 540px) {
+    div.nbinput.container,
+    div.nboutput.container {
+        flex-direction: column;
+    }
+}
+
+/* input container */
+div.nbinput.container {
+    padding-top: 5px;
+}
+
+/* last container */
+div.nblast.container {
+    padding-bottom: 5px;
+}
+
+/* input prompt */
+div.nbinput.container div.prompt pre {
+    color: #307FC1;
+}
+
+/* output prompt */
+div.nboutput.container div.prompt pre {
+    color: #BF5B3D;
+}
+
+/* all prompts */
+div.nbinput.container div.prompt,
+div.nboutput.container div.prompt {
+    width: 4.5ex;
+    padding-top: 5px;
+    position: relative;
+    user-select: none;
+}
+
+div.nbinput.container div.prompt > div,
+div.nboutput.container div.prompt > div {
+    position: absolute;
+    right: 0;
+    margin-right: 0.3ex;
+}
+
+@media (max-width: 540px) {
+    div.nbinput.container div.prompt,
+    div.nboutput.container div.prompt {
+        width: unset;
+        text-align: left;
+        padding: 0.4em;
+    }
+    div.nboutput.container div.prompt.empty {
+        padding: 0;
+    }
+
+    div.nbinput.container div.prompt > div,
+    div.nboutput.container div.prompt > div {
+        position: unset;
+    }
+}
+
+/* disable scrollbars on prompts */
+div.nbinput.container div.prompt pre,
+div.nboutput.container div.prompt pre {
+    overflow: hidden;
+}
+
+/* input/output area */
+div.nbinput.container div.input_area,
+div.nboutput.container div.output_area {
+    -webkit-flex: 1;
+    flex: 1;
+    overflow: auto;
+}
+@media (max-width: 540px) {
+    div.nbinput.container div.input_area,
+    div.nboutput.container div.output_area {
+        width: 100%;
+    }
+}
+
+/* input area */
+div.nbinput.container div.input_area {
+    border: 1px solid #e0e0e0;
+    border-radius: 2px;
+    /*background: #f5f5f5;*/
+}
+
+/* override MathJax center alignment in output cells */
+div.nboutput.container div[class*=MathJax] {
+    text-align: left !important;
+}
+
+/* override sphinx.ext.imgmath center alignment in output cells */
+div.nboutput.container div.math p {
+    text-align: left;
+}
+
+/* standard error */
+div.nboutput.container div.output_area.stderr {
+    background: #fdd;
+}
+
+/* ANSI colors */
+.ansi-black-fg { color: #3E424D; }
+.ansi-black-bg { background-color: #3E424D; }
+.ansi-black-intense-fg { color: #282C36; }
+.ansi-black-intense-bg { background-color: #282C36; }
+.ansi-red-fg { color: #E75C58; }
+.ansi-red-bg { background-color: #E75C58; }
+.ansi-red-intense-fg { color: #B22B31; }
+.ansi-red-intense-bg { background-color: #B22B31; }
+.ansi-green-fg { color: #00A250; }
+.ansi-green-bg { background-color: #00A250; }
+.ansi-green-intense-fg { color: #007427; }
+.ansi-green-intense-bg { background-color: #007427; }
+.ansi-yellow-fg { color: #DDB62B; }
+.ansi-yellow-bg { background-color: #DDB62B; }
+.ansi-yellow-intense-fg { color: #B27D12; }
+.ansi-yellow-intense-bg { background-color: #B27D12; }
+.ansi-blue-fg { color: #208FFB; }
+.ansi-blue-bg { background-color: #208FFB; }
+.ansi-blue-intense-fg { color: #0065CA; }
+.ansi-blue-intense-bg { background-color: #0065CA; }
+.ansi-magenta-fg { color: #D160C4; }
+.ansi-magenta-bg { background-color: #D160C4; }
+.ansi-magenta-intense-fg { color: #A03196; }
+.ansi-magenta-intense-bg { background-color: #A03196; }
+.ansi-cyan-fg { color: #60C6C8; }
+.ansi-cyan-bg { background-color: #60C6C8; }
+.ansi-cyan-intense-fg { color: #258F8F; }
+.ansi-cyan-intense-bg { background-color: #258F8F; }
+.ansi-white-fg { color: #C5C1B4; }
+.ansi-white-bg { background-color: #C5C1B4; }
+.ansi-white-intense-fg { color: #A1A6B2; }
+.ansi-white-intense-bg { background-color: #A1A6B2; }
+
+.ansi-default-inverse-fg { color: #FFFFFF; }
+.ansi-default-inverse-bg { background-color: #000000; }
+
+.ansi-bold { font-weight: bold; }
+.ansi-underline { text-decoration: underline; }
+
+
+div.nbinput.container div.input_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight] > pre,
+div.nboutput.container div.output_area div[class*=highlight].math,
+div.nboutput.container div.output_area.rendered_html,
+div.nboutput.container div.output_area > div.output_javascript,
+div.nboutput.container div.output_area:not(.rendered_html) > img{
+    padding: 5px;
+    margin: 0;
+}
+
+/* fix copybtn overflow problem in chromium (needed for 'sphinx_copybutton') */
+div.nbinput.container div.input_area > div[class^='highlight'],
+div.nboutput.container div.output_area > div[class^='highlight']{
+    overflow-y: hidden;
+}
+
+/* hide copybtn icon on prompts (needed for 'sphinx_copybutton') */
+.prompt a.copybtn {
+    display: none;
+}
+
+/* Some additional styling taken form the Jupyter notebook CSS */
+div.rendered_html table {
+  border: none;
+  border-collapse: collapse;
+  border-spacing: 0;
+  color: black;
+  font-size: 12px;
+  table-layout: fixed;
+}
+div.rendered_html thead {
+  border-bottom: 1px solid black;
+  vertical-align: bottom;
+}
+div.rendered_html tr,
+div.rendered_html th,
+div.rendered_html td {
+  text-align: right;
+  vertical-align: middle;
+  padding: 0.5em 0.5em;
+  line-height: normal;
+  white-space: normal;
+  max-width: none;
+  border: none;
+}
+div.rendered_html th {
+  font-weight: bold;
+}
+div.rendered_html tbody tr:nth-child(odd) {
+  background: #f5f5f5;
+}
+div.rendered_html tbody tr:hover {
+  background: rgba(66, 165, 245, 0.2);
+}
+
+/* CSS overrides for sphinx_rtd_theme */
+
+/* 24px margin */
+.nbinput.nblast.container,
+.nboutput.nblast.container {
+    margin-bottom: 19px;  /* padding has already 5px */
+}
+
+/* ... except between code cells! */
+.nblast.container + .nbinput.container {
+    margin-top: -19px;
+}
+
+.admonition > p:before {
+    margin-right: 4px;  /* make room for the exclamation icon */
+}
+
+/* Fix math alignment, see https://github.com/rtfd/sphinx_rtd_theme/pull/686 */
+.math {
+    text-align: unset;
+}
+</style>
+<div class="section" id="How-to-use-Umlaut">
+<h1>How to use Umlaut<a class="headerlink" href="#How-to-use-Umlaut" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="Import-desired-metrics">
+<h2>Import desired metrics<a class="headerlink" href="#Import-desired-metrics" title="Permalink to this headline">¶</a></h2>
+<p>To use the measurement methods in a pipeline, the desired metrics have to be imported from the Umlaut package.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[33]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="kn">import</span> <span class="nn">tensorflow</span> <span class="k">as</span> <span class="nn">tf</span>
+<span class="kn">from</span> <span class="nn">umlaut</span> <span class="kn">import</span> <span class="n">Benchmark</span><span class="p">,</span>\
+                     <span class="n">ConfusionMatrixTracker</span><span class="p">,</span>\
+                     <span class="n">HyperparameterTracker</span><span class="p">,</span>\
+                     <span class="n">BenchmarkSupervisor</span><span class="p">,</span>\
+                     <span class="n">TimeMetric</span><span class="p">,</span>\
+                     <span class="n">MemoryMetric</span><span class="p">,</span>\
+                     <span class="n">PowerMetric</span><span class="p">,</span>\
+                     <span class="n">EnergyMetric</span><span class="p">,</span>\
+                     <span class="n">ThroughputMetric</span><span class="p">,</span>\
+                     <span class="n">LatencyMetric</span><span class="p">,</span>\
+                     <span class="n">TTATracker</span><span class="p">,</span>\
+                     <span class="n">LossTracker</span><span class="p">,</span>\
+                     <span class="n">CPUMetric</span>
+<span class="kn">from</span> <span class="nn">sklearn.metrics</span> <span class="kn">import</span> <span class="n">confusion_matrix</span>
+<span class="kn">from</span> <span class="nn">keras</span> <span class="kn">import</span> <span class="n">optimizers</span>
+
+<span class="k">def</span> <span class="nf">prep_data</span><span class="p">():</span>
+    <span class="n">fashion_mnist</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">datasets</span><span class="o">.</span><span class="n">fashion_mnist</span>
+
+    <span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">),</span> <span class="p">(</span><span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span> <span class="o">=</span> <span class="n">fashion_mnist</span><span class="o">.</span><span class="n">load_data</span><span class="p">()</span>
+    <span class="n">class_names</span> <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;T-shirt/top&#39;</span><span class="p">,</span> <span class="s1">&#39;Trouser&#39;</span><span class="p">,</span> <span class="s1">&#39;Pullover&#39;</span><span class="p">,</span> <span class="s1">&#39;Dress&#39;</span><span class="p">,</span> <span class="s1">&#39;Coat&#39;</span><span class="p">,</span>
+                   <span class="s1">&#39;Sandal&#39;</span><span class="p">,</span> <span class="s1">&#39;Shirt&#39;</span><span class="p">,</span> <span class="s1">&#39;Sneaker&#39;</span><span class="p">,</span> <span class="s1">&#39;Bag&#39;</span><span class="p">,</span> <span class="s1">&#39;Ankle boot&#39;</span><span class="p">]</span>
+
+    <span class="n">train_images</span> <span class="o">=</span> <span class="n">train_images</span> <span class="o">/</span> <span class="mf">255.0</span>
+    <span class="n">test_images</span> <span class="o">=</span> <span class="n">test_images</span> <span class="o">/</span> <span class="mf">255.0</span>
+
+    <span class="k">return</span> <span class="n">train_images</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">,</span> <span class="n">class_names</span>
+</pre></div>
+</div>
+</div>
+</div>
+<div class="section" id="Initializing-the-benchmark-object">
+<h2>Initializing the benchmark object<a class="headerlink" href="#Initializing-the-benchmark-object" title="Permalink to this headline">¶</a></h2>
+<p>To start include the measurement functions into the pipeline, a benchmark object has to be created. A benchmark object manages the database entries for the measured metrics. It provides functions to log and access measurement data. The object receives the database file in which the results should be stored and a description as input values.</p>
+</div>
+<div class="section" id="Two-kinds-of-metrics">
+<h2>Two kinds of metrics<a class="headerlink" href="#Two-kinds-of-metrics" title="Permalink to this headline">¶</a></h2>
+<p>The Umlaut framework distinguishes two different kinds of metrics. The supervised metrics and the valued metrics. Both kinds of metrics have to be used different.</p>
+<div class="section" id="Supervised-metrics">
+<h3>Supervised metrics<a class="headerlink" href="#Supervised-metrics" title="Permalink to this headline">¶</a></h3>
+<p>The supervised metrics include: - throughput - latency - time - memory - power - energy - cpu</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[34]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">bm</span> <span class="o">=</span> <span class="n">Benchmark</span><span class="p">(</span><span class="s1">&#39;mnist_db&#39;</span><span class="p">,</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;mnist_clothing&quot;</span><span class="p">)</span>
+
+<span class="n">mnist_metrics</span> <span class="o">=</span> <span class="p">{</span>
+    <span class="s2">&quot;throughput&quot;</span><span class="p">:</span> <span class="n">ThroughputMetric</span><span class="p">(</span><span class="s1">&#39;mnist throughput&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;latency&quot;</span><span class="p">:</span> <span class="n">LatencyMetric</span><span class="p">(</span><span class="s1">&#39;mnist latency&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;time&quot;</span><span class="p">:</span> <span class="n">TimeMetric</span><span class="p">(</span><span class="s1">&#39;mnist time&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;memory&quot;</span><span class="p">:</span> <span class="n">MemoryMetric</span><span class="p">(</span><span class="s1">&#39;mnist memory&#39;</span><span class="p">,</span> <span class="n">interval</span><span class="o">=</span><span class="mf">0.1</span><span class="p">),</span>
+    <span class="s2">&quot;power&quot;</span><span class="p">:</span> <span class="n">PowerMetric</span><span class="p">(</span><span class="s1">&#39;mnist power&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;energy&quot;</span><span class="p">:</span> <span class="n">EnergyMetric</span><span class="p">(</span><span class="s1">&#39;mnist energy&#39;</span><span class="p">),</span>
+    <span class="s2">&quot;cpu&quot;</span><span class="p">:</span> <span class="n">CPUMetric</span><span class="p">(</span><span class="s1">&#39;mnist&#39;</span> <span class="n">cpu</span><span class="s1">&#39;, interval=0.1)</span>
+<span class="p">}</span>
+</pre></div>
+</div>
+</div>
+<p>To include the measurement of supervised metrics the desired metrics as well as the benchmark object have to be passed to a &#64;BenchmarkSupervisor decorator. The appropriate BenchmarkSupervisor object manages the tracking of all supervised metrics.</p>
+</div>
+<div class="section" id="Valued-metrics">
+<h3>Valued metrics<a class="headerlink" href="#Valued-metrics" title="Permalink to this headline">¶</a></h3>
+<p>The valued metrics include: - confusion matrix - time to accuracy - loss</p>
+<p>To collect measurements for the valued metrics, each one has a track function which has to be called with the corresponding input.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[42]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="nd">@BenchmarkSupervisor</span><span class="p">(</span><span class="n">bloat_metrics</span><span class="o">.</span><span class="n">values</span><span class="p">(),</span> <span class="n">bm</span><span class="p">)</span>
+<span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">):</span>
+    <span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">([</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(</span><span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">)),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">),</span>
+        <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+    <span class="p">])</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="s2">&quot;Adam&quot;</span><span class="p">,</span>
+                  <span class="n">loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">SparseCategoricalCrossentropy</span><span class="p">(</span><span class="n">from_logits</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                  <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">])</span>
+
+    <span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="mi">10</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="mi">256</span><span class="p">)</span>
+
+    <span class="n">mnist_metrics</span><span class="p">[</span><span class="s2">&quot;throughput&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">num_entries</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">train_images</span><span class="p">))</span>
+    <span class="n">mnist_metrics</span><span class="p">[</span><span class="s2">&quot;latency&quot;</span><span class="p">]</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">num_entries</span><span class="o">=</span><span class="nb">len</span><span class="p">(</span><span class="n">train_images</span><span class="p">))</span>
+
+    <span class="n">TTATracker</span><span class="p">(</span><span class="n">bm</span><span class="p">)</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">accuracies</span><span class="o">=</span><span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">],</span>  <span class="n">description</span><span class="o">=</span><span class="s2">&quot;TTA&quot;</span><span class="p">)</span>
+    <span class="n">LossTracker</span><span class="p">(</span><span class="n">bm</span><span class="p">)</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">loss_values</span><span class="o">=</span><span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s1">&#39;loss&#39;</span><span class="p">],</span> <span class="n">description</span><span class="o">=</span><span class="s2">&quot;loss&quot;</span><span class="p">)</span>
+
+    <span class="k">return</span> <span class="n">model</span>
+</pre></div>
+</div>
+</div>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[ ]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">test</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">,</span> <span class="n">class_names</span><span class="p">):</span>
+
+    <span class="n">model</span><span class="o">.</span><span class="n">evaluate</span><span class="p">(</span><span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">)</span>
+    <span class="n">pred_test</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">predict_classes</span><span class="p">(</span><span class="n">test_images</span><span class="p">)</span>
+    <span class="n">con_mat</span> <span class="o">=</span> <span class="n">confusion_matrix</span><span class="p">(</span><span class="n">test_labels</span><span class="p">,</span> <span class="n">pred_test</span><span class="p">)</span>
+    <span class="n">ConfusionMatrixTracker</span><span class="p">(</span><span class="n">bm</span><span class="p">)</span><span class="o">.</span><span class="n">track</span><span class="p">(</span><span class="n">con_mat</span><span class="p">,</span> <span class="n">class_names</span><span class="p">,</span> <span class="s2">&quot;confusion matrix&quot;</span><span class="p">)</span>
+
+    <span class="n">bm</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+</div>
+</div>
+<div class="section" id="Collect-measurements">
+<h2>Collect measurements<a class="headerlink" href="#Collect-measurements" title="Permalink to this headline">¶</a></h2>
+<p>When all desired metrics are applied to the pipeline it can be executed and measurements are collected during the runtime.</p>
+<div class="nbinput docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[43]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="n">train_images</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">,</span> <span class="n">class_names</span> <span class="o">=</span> <span class="n">prep_data</span><span class="p">()</span>
+<span class="n">model</span> <span class="o">=</span> <span class="n">train</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">)</span>
+<span class="n">test</span><span class="p">(</span><span class="n">model</span><span class="p">,</span> <span class="n">test_images</span><span class="p">,</span> <span class="n">test_labels</span><span class="p">,</span> <span class="n">class_names</span><span class="p">)</span>
+</pre></div>
+</div>
+</div>
+<div class="nboutput docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area stderr docutils container">
+<div class="highlight"><pre>
+2021-07-26 13:40:53.128730: W tensorflow/core/framework/cpu_allocator_impl.cc:80] Allocation of 188160000 exceeds 10% of free system memory.
+</pre></div></div>
+</div>
+<div class="nboutput nblast docutils container">
+<div class="prompt empty docutils container">
+</div>
+<div class="output_area docutils container">
+<div class="highlight"><pre>
+Epoch 1/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.8690 - accuracy: 0.7114
+Epoch 2/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.4414 - accuracy: 0.8489
+Epoch 3/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3959 - accuracy: 0.8628
+Epoch 4/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3678 - accuracy: 0.8720
+Epoch 5/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3469 - accuracy: 0.8776
+Epoch 6/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3349 - accuracy: 0.8809
+Epoch 7/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3165 - accuracy: 0.8867
+Epoch 8/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3068 - accuracy: 0.8899
+Epoch 9/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.3026 - accuracy: 0.8914
+Epoch 10/10
+235/235 [==============================] - 1s 3ms/step - loss: 0.2821 - accuracy: 0.8985
+</pre></div></div>
+</div>
+</div>
+<div class="section" id="Visualize-results">
+<h2>Visualize results<a class="headerlink" href="#Visualize-results" title="Permalink to this headline">¶</a></h2>
+<p>To evaluate the measurement results, Umlaut provides a command line interface as visualization frontend. To use this interface <strong>umlaut-cli mnist_db.db</strong> has to be executed. The CLI prompts the user to insert a valid combination for the UUID, the measurement type and the measurement description to visualize the corresponding metrics.</p>
+<p><img alt="Time" src="https://imgur.com/QfXlA8C.png" /> <img alt="Memory" src="https://imgur.com/fOh7gIL.png" /> <img alt="CPU" src="https://i.imgur.com/pSj1NDn.png" /> <img alt="Energy" src="https://imgur.com/3cuhcdo.png" /> <img alt="Latency" src="https://imgur.com/SVdR0EG.png" /> <img alt="Loss" src="https://imgur.com/8X041nq.png" /> <img alt="Power" src="https://imgur.com/z59U8aT.png" /> <img alt="Thrpughput" src="https://imgur.com/NzSGUgr.png" /> <img alt="TTA" src="https://imgur.com/31gHh8E.png" /> <img alt="Matrix" src="https://imgur.com/7WEJ4Ta.png" /></p>
+</div>
+<div class="section" id="Hyperparameter-Tracking">
+<h2>Hyperparameter Tracking<a class="headerlink" href="#Hyperparameter-Tracking" title="Permalink to this headline">¶</a></h2>
+<p>Umlaut also includes measuring hyperparameters. Similar to valued metrics, trackers are used to collect hyperparameter measurements. The user can decide which parameters and which values for them to track.</p>
+<div class="nbinput nblast docutils container">
+<div class="prompt highlight-none notranslate"><div class="highlight"><pre><span></span>[45]:
+</pre></div>
+</div>
+<div class="input_area highlight-ipython3 notranslate"><div class="highlight"><pre>
+<span></span><span class="k">def</span> <span class="nf">train</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">):</span>
+    <span class="n">ht</span> <span class="o">=</span> <span class="n">HyperparameterTracker</span><span class="p">(</span><span class="n">bm</span><span class="p">,</span> <span class="s2">&quot;hyper params of sample pipeline&quot;</span><span class="p">,</span> <span class="p">[</span><span class="s1">&#39;lr&#39;</span><span class="p">,</span> <span class="s1">&#39;num_epochs&#39;</span><span class="p">,</span> <span class="s1">&#39;batch_size&#39;</span><span class="p">],</span>
+                               <span class="s1">&#39;loss&#39;</span><span class="p">)</span>
+    <span class="k">for</span> <span class="n">lr</span> <span class="ow">in</span> <span class="p">[</span><span class="mf">0.1</span><span class="p">,</span> <span class="mf">0.01</span><span class="p">,</span> <span class="mf">0.001</span><span class="p">]:</span>
+        <span class="k">for</span> <span class="n">num_epochs</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">5</span><span class="p">,</span> <span class="mi">10</span><span class="p">,</span> <span class="mi">20</span><span class="p">]:</span>
+            <span class="k">for</span> <span class="n">batch_size</span> <span class="ow">in</span> <span class="p">[</span><span class="mi">64</span><span class="p">,</span> <span class="mi">128</span><span class="p">,</span> <span class="mi">256</span><span class="p">]:</span>
+
+                <span class="n">model</span> <span class="o">=</span> <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">Sequential</span><span class="p">([</span>
+                    <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Flatten</span><span class="p">(</span><span class="n">input_shape</span><span class="o">=</span><span class="p">(</span><span class="mi">28</span><span class="p">,</span> <span class="mi">28</span><span class="p">)),</span>
+                    <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">128</span><span class="p">,</span> <span class="n">activation</span><span class="o">=</span><span class="s1">&#39;relu&#39;</span><span class="p">),</span>
+                    <span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">layers</span><span class="o">.</span><span class="n">Dense</span><span class="p">(</span><span class="mi">10</span><span class="p">)</span>
+                <span class="p">])</span>
+
+                <span class="n">optimizer</span> <span class="o">=</span> <span class="n">optimizers</span><span class="o">.</span><span class="n">Adam</span><span class="p">(</span><span class="n">lr</span><span class="o">=</span><span class="n">lr</span><span class="p">)</span>
+
+                <span class="n">model</span><span class="o">.</span><span class="n">compile</span><span class="p">(</span><span class="n">optimizer</span><span class="o">=</span><span class="n">optimizer</span><span class="p">,</span>
+                              <span class="n">loss</span><span class="o">=</span><span class="n">tf</span><span class="o">.</span><span class="n">keras</span><span class="o">.</span><span class="n">losses</span><span class="o">.</span><span class="n">SparseCategoricalCrossentropy</span><span class="p">(</span><span class="n">from_logits</span><span class="o">=</span><span class="kc">True</span><span class="p">),</span>
+                              <span class="n">metrics</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;accuracy&#39;</span><span class="p">])</span>
+
+                <span class="n">history</span> <span class="o">=</span> <span class="n">model</span><span class="o">.</span><span class="n">fit</span><span class="p">(</span><span class="n">train_images</span><span class="p">,</span> <span class="n">train_labels</span><span class="p">,</span> <span class="n">epochs</span><span class="o">=</span><span class="n">num_epochs</span><span class="p">,</span> <span class="n">batch_size</span><span class="o">=</span><span class="n">batch_size</span><span class="p">)</span>
+                <span class="n">ht</span><span class="o">.</span><span class="n">track</span><span class="p">({</span><span class="s1">&#39;lr&#39;</span><span class="p">:</span> <span class="n">lr</span><span class="p">,</span> <span class="s1">&#39;num_epochs&#39;</span><span class="p">:</span> <span class="n">num_epochs</span><span class="p">,</span> <span class="s1">&#39;batch_size&#39;</span><span class="p">:</span> <span class="n">batch_size</span><span class="p">,</span> <span class="s1">&#39;loss&#39;</span><span class="p">:</span> <span class="n">history</span><span class="o">.</span><span class="n">history</span><span class="p">[</span><span class="s2">&quot;accuracy&quot;</span><span class="p">][</span><span class="o">-</span><span class="mi">1</span><span class="p">]})</span>
+    <span class="n">ht</span><span class="o">.</span><span class="n">close</span><span class="p">()</span>
+</pre></div>
+</div>
+</div>
+<img alt="Hyperparameter" src="https://imgur.com/vk1kejk.png" />
+</div>
+</div>
+<div class="section" id="Troubleshooting">
+<h1>Troubleshooting<a class="headerlink" href="#Troubleshooting" title="Permalink to this headline">¶</a></h1>
+<div class="section" id="PyRAPL-(Intel)---No-Access">
+<h2>PyRAPL (Intel) - No Access<a class="headerlink" href="#PyRAPL-(Intel)---No-Access" title="Permalink to this headline">¶</a></h2>
+<p>Run <strong>sudo chmod -R a+r /sys/class/powercap/intel-rapl</strong></p>
+</div>
+</div>
+
+
+           </div>
+           
+          </div>
+          <footer>
+    <div class="rst-footer-buttons" role="navigation" aria-label="footer navigation">
+        <a href="moduleref.html" class="btn btn-neutral float-right" title="Module reference" accesskey="n" rel="next">Next <span class="fa fa-arrow-circle-right" aria-hidden="true"></span></a>
+        <a href="index.html" class="btn btn-neutral float-left" title="Welcome to Umlaut" accesskey="p" rel="prev"><span class="fa fa-arrow-circle-left" aria-hidden="true"></span> Previous</a>
+    </div>
+
+  <hr/>
+
+  <div role="contentinfo">
+    <p>
+        &#169; Copyright 2021, Jonas Schulze, Willi Rieck, Christian Jacob, Jost Morgenstern.
+
+    </p>
+  </div>
+    
+    
+    
+    Built with <a href="https://www.sphinx-doc.org/">Sphinx</a> using a
+    
+    <a href="https://github.com/readthedocs/sphinx_rtd_theme">theme</a>
+    
+    provided by <a href="https://readthedocs.org">Read the Docs</a>. 
+
+</footer>
+        </div>
+      </div>
+
+    </section>
+
+  </div>
+  
+
+  <script type="text/javascript">
+      jQuery(function () {
+          SphinxRtdTheme.Navigation.enable(true);
+      });
+  </script>
+
+  
+  
+    
+   
+
+</body>
+</html>

@@ -23,7 +23,7 @@ Using Umlaut, you can collect and visualise the following metrics:
 
 How do I use it?
 ----------------
-We have prepared an :doc:`example </stub_example>` that will guide you through the usage of our tool.
+We have prepared an :doc:`example </example_umlaut>` that will guide you through the usage of our tool.
 We also recommend you have a look at the :doc:`module reference </moduleref>`.
 
 
@@ -39,5 +39,5 @@ Umlaut was developed by Christian Jacob, Jost Morgenstern, Willi Rieck and Jonas
 .. toctree::
    :hidden:
 
-   Example usage <stub_example>
+   Example usage <example_umlaut>
    Module reference <moduleref>

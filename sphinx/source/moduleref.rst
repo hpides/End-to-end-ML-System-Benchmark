@@ -1,7 +1,7 @@
 Module reference
 ================
 
-umlaut.Benchmark
+Benchmark class
 ----------------
 
 .. automodule:: umlaut.Benchmark
@@ -14,7 +14,6 @@ Supervised metrics
 ^^^^^^^^^^^^^^^^^^
 
 .. autoclass:: umlaut.BenchmarkSupervisor
-    
 
 .. autoclass:: umlaut.CPUMetric
 
