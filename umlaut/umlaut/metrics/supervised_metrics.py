@@ -269,7 +269,8 @@ class LatencyMetric(Metric):
 
     def after(self):
         after_time = time.perf_counter()
-        self.data = self.num_entries / (after_time - self.before_time)
+        self.data = (after_time - self.before_time) / self.num_entries
+
 
     def track(self, num_entries):
         """Sets the number of data points used to calculate latency by this object
@@ -304,7 +305,7 @@ class ThroughputMetric(Metric):
 
     def after(self):
         after_time = time.perf_counter()
-        self.data = (after_time - self.before_time) / self.num_entries
+        self.data = self.num_entries / (after_time - self.before_time)
 
     def track(self, num_entries):
         """Sets the number of data points used to calculate throughput by this object
