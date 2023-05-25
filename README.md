@@ -84,31 +84,31 @@ Measurements for the same metric for multiple pipelines can be shown on a single
 
 ### Selecting single pipeline to visualize
 
-![Selecting single pipeline to visualize](plots/umlaut_cli_single_pipeline_1.png)  
+<img src="plots/umlaut_cli_single_pipeline_1.png" alt="Selecting single pipeline to visualize" width="auto" height="auto" />
 
 ### Selecting measurements for a single pipeline
 
 ![Selecting measurements for a single pipeline](plots/umlaut_cli_single_pipeline_2.png)
 
-### Results for CPU and Memory Usage [single pipeline]
+### Results for CPU and Memory Usage [single pipeline]  
 
-![Results for CPU Usage [single pipeline]](plots/cpu_single_pipeline.png)
+<img src="plots/cpu_single_pipeline.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="350" />
 
-![Results for Memory Usage [single pipeline]](plots/memory_single_pipeline.png)    
+<img src="plots/memory_single_pipeline.png" alt="Results for Memory Usage [single pipeline]" width="auto" height="350" />  
 
-### Selecting multiple pipelines to visualize
+### Selecting multiple pipelines to visualize   
 
 ![Selecting multiple pipelines to visualize](plots/umlaut_cli_3pipelines_1.png)  
 
 ### Selecting measurements for multiple pipelines
 
-![Selecting measurements for multiple pipelines](plots/umlaut_cli_3pipelines_2.png)
+![Selecting measurements for multiple pipelines](plots/umlaut_cli_3pipelines_2.png)  
 
-### Results for CPU and Power Usage [multiple pipelines]
+### Results for CPU and Power Usage [multiple pipelines]  
 
-![Results for CPU Usage [multiple pipelines]](plots/cpu_3pipelines.png)
+<img src="plots/cpu_3pipelines.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="350" />
 
-![Results for Power Usage [multiple pipelines]](plots/power_3pipeline_runs.png)
+<img src="plots/power_3pipeline_runs.png" alt="Results for Power Usage [multiple pipelines]" width="auto" height="350" />  
 
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 
