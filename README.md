@@ -121,9 +121,9 @@ To reproduce the following plots, use the *[./github_example/hello_word.db](./pi
 
 ### Results for CPU and Memory Usage [single pipeline]  
 
-<img src="plots/cpu_single_pipeline.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="350" />
+<img src="plots/cpu_single_pipeline.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="400" />
 
-<img src="plots/memory_single_pipeline.png" alt="Results for Memory Usage [single pipeline]" width="auto" height="350" />  
+<img src="plots/memory_single_pipeline.png" alt="Results for Memory Usage [single pipeline]" width="auto" height="400" />  
 
 ### Selecting multiple pipelines to visualize   
 
@@ -135,9 +135,9 @@ To reproduce the following plots, use the *[./github_example/hello_word.db](./pi
 
 ### Results for CPU and Power Usage [multiple pipelines]  
 
-<img src="plots/cpu_3pipelines.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="350" />
+<img src="plots/cpu_3pipelines.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="400" />
 
-<img src="plots/power_3pipeline_runs.png" alt="Results for Power Usage [multiple pipelines]" width="auto" height="350" />  
+<img src="plots/power_3pipeline_runs.png" alt="Results for Power Usage [multiple pipelines]" width="auto" height="400" />  
 
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 
