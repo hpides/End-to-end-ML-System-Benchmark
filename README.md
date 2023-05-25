@@ -139,10 +139,18 @@ Measurements for the same metric for multiple pipelines can be shown on a single
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 
 
-* So2Sat Earth Observation (https://scihub.copernicus.eu/)
-* Backblaze Hard Drive Anomaly Prediction (https://www.backblaze.com/b2/hard-drive-test-data.html)
-* Stock Market Prediction (https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f)
-* MNIST Digit Recognition (https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb)
+* So2Sat Earth Observation
+  * [pipeline](https://scihub.copernicus.eu/)
+  * [umlaut pipeline](./pipelines/so2sat_pipeline)
+* Backblaze Hard Drive Anomaly Prediction 
+  * [pipeline](https://www.backblaze.com/b2/hard-drive-test-data.html)
+  * [umlaut pipeline](./pipelines/backblaze_pipeline)
+* Stock Market Prediction
+  * [pipeline](https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f)
+  * [umlaut pipeline](./pipelines/stock_market_pipeline)
+* MNIST Digit Recognition
+  * [pipeline](https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb)
+  * [umlaut pipeline](./pipelines/MNIST_pipeline)
 
 ## Documentation
 * https://hpides.github.io/End-to-end-ML-System-Benchmark/
