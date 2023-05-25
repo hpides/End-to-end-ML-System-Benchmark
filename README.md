@@ -82,19 +82,29 @@ UMLAUT collects measurements of the following metrics:
 Through the CLI tool, the measurements for each of the metrics can be visualized. For each pipeline, users can generate plots for one or more metrics.   
 Measurements for the same metric for multiple pipelines can be shown on a single plot. Examples of using the CLI toolkit for visualization are shown below. 
 
+### Selecting single pipeline to visualize
+
 ![Selecting single pipeline to visualize](plots/umlaut_cli_single_pipeline_1.png)  
 
+### Selecting measurements for a single pipeline
+
 ![Selecting measurements for a single pipeline](plots/umlaut_cli_single_pipeline_2.png)
+
+### Results for CPU and Memory Usage [single pipeline]
 
 ![Results for CPU Usage [single pipeline]](plots/cpu_single_pipeline.png)
 
 ![Results for Memory Usage [single pipeline]](plots/memory_single_pipeline.png)    
 
-
+### Selecting multiple pipelines to visualize
 
 ![Selecting multiple pipelines to visualize](plots/umlaut_cli_3pipelines_1.png)  
 
+### Selecting measurements for multiple pipelines
+
 ![Selecting measurements for multiple pipelines](plots/umlaut_cli_3pipelines_2.png)
+
+### Results for CPU and Power Usage [multiple pipelines]
 
 ![Results for CPU Usage [multiple pipelines]](plots/cpu_3pipelines.png)
 
