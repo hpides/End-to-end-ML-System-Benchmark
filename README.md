@@ -26,7 +26,7 @@ pip install -e <PATH_TO_REPOSITORY>/umlaut/
 
 ## System Integration
 
-Upon installation, UMLAUT can be imported in any Python pipeline. 
+Upon installation, UMLAUT can be imported in any Python pipeline. The complete example pipeline can be found in [./pipelines/github_example/main.py](./pipelines/github_example/main.py).
 To import UMLAUT, use the following *import* statement in the Python script.
 
 ``` 
@@ -34,6 +34,7 @@ import umlaut
 ```
 
 To intialize a benchmark, initialize an instance of the *Benchmark* class. It requires two string parameters, *db_file*, and *description (optional)*.
+The metrics are listed in a dictionary that will then be used by the benchmark class.
 
 ``` 
 import time
@@ -75,10 +76,11 @@ Measurements are accessed through UMLAUT's CLI tool. It can be invoked from a *b
 umlaut-cli <db_file>
 ```
 
-To read through the measurements from the *hello_world.db* database, we insert the *db_file* name in the command.
+To read through the measurements from the *sample_db_file.db* database, we insert the *db_file* name in the command.
 
 ```
-umlaut-cli hello_world.db
+cd pipelines/github_example
+umlaut-cli sample_db_file.db
 ```
 
 For detailed descriptions of all avaiable arguments and flags, call the *help* command for *umlaut-cli*.
@@ -107,6 +109,7 @@ UMLAUT collects measurements of the following metrics:
 
 Through the CLI tool, the measurements for each of the metrics can be visualized. For each pipeline, users can generate plots for one or more metrics.   
 Measurements for the same metric for multiple pipelines can be shown on a single plot. Examples of using the CLI toolkit for visualization are shown below. 
+To reproduce the following plots, use the *[./github_example/hello_word.db](./pipelines/github_example/)*.
 
 ### Selecting single pipeline to visualize
 
@@ -139,18 +142,10 @@ Measurements for the same metric for multiple pipelines can be shown on a single
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 
 
-* So2Sat Earth Observation
-  * [pipeline](https://scihub.copernicus.eu/)
-  * [umlaut pipeline](./pipelines/so2sat_pipeline)
-* Backblaze Hard Drive Anomaly Prediction 
-  * [pipeline](https://www.backblaze.com/b2/hard-drive-test-data.html)
-  * [umlaut pipeline](./pipelines/backblaze_pipeline)
-* Stock Market Prediction
-  * [pipeline](https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f)
-  * [umlaut pipeline](./pipelines/stock_market_pipeline)
-* MNIST Digit Recognition
-  * [pipeline](https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb)
-  * [umlaut pipeline](./pipelines/MNIST_pipeline)
+* So2Sat Earth Observation [[description]](https://scihub.copernicus.eu/) [[umlaut pipeline]](./pipelines/so2sat_pipeline)
+* Backblaze Hard Drive Anomaly Prediction [[description]](https://www.backblaze.com/b2/hard-drive-test-data.html) [[umlaut pipeline]](./pipelines/backblaze_pipeline)
+* Stock Market Prediction [[description]](https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f) [[umlaut pipeline]](./pipelines/stock_market_pipeline)
+* MNIST Digit Recognition [[description]](https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb) [[umlaut pipeline]](./pipelines/MNIST_pipeline)
 
 ## Documentation
 * https://hpides.github.io/End-to-end-ML-System-Benchmark/

@@ -58,6 +58,7 @@ class HyperparemeterVisualizer(Visualizer):
 class ConfusionMatrixVisualizer(Visualizer):
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 16})
+        plt.tight_layout()
         figs = []
         for _, row in self.df.iterrows():
             # every row needs to be visualized individually since each row corresponds to one confusion matrix
@@ -133,6 +134,7 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 16})
         fig, ax = plt.subplots()
+        plt.tight_layout()
 
         for i in range(len(self.df)):
             ax.plot(self.timedelta_lists[i], self.measurements_lists[i], label=self.linelabels[i])
@@ -180,7 +182,7 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 16})
         fig, ax = plt.subplots()
-
+        plt.tight_layout()
         for _, row in self.df.iterrows():
             measurements = row['measurement_data']
             epoch_ids = np.arange(1, len(measurements) + 1)
@@ -230,6 +232,7 @@ class BarVisualizer(Visualizer):
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 16})
         fig, ax = plt.subplots()
+        plt.tight_layout()
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         
         plt.title(self.title)
