@@ -57,7 +57,7 @@ class HyperparemeterVisualizer(Visualizer):
 
 class ConfusionMatrixVisualizer(Visualizer):
     def plot_with_matplotlib(self):
-        plt.rcParams.update({'font.size': 16})
+        plt.rcParams.update({'font.size': 18})
         plt.tight_layout()
         figs = []
         for _, row in self.df.iterrows():
@@ -132,7 +132,7 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         return f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
     
     def plot_with_matplotlib(self):
-        plt.rcParams.update({'font.size': 16})
+        plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
 
@@ -180,7 +180,7 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
     """
 
     def plot_with_matplotlib(self):
-        plt.rcParams.update({'font.size': 16})
+        plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
         for _, row in self.df.iterrows():
@@ -230,7 +230,7 @@ class BarVisualizer(Visualizer):
         self.df = df_from_cli
     
     def plot_with_matplotlib(self):
-        plt.rcParams.update({'font.size': 16})
+        plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
