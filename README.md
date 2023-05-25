@@ -36,9 +36,35 @@ import umlaut
 To intialize a benchmark, initialize an instance of the *Benchmark* class. It requires two string parameters, *db_file*, and *description (optional)*.
 
 ``` 
-from umlaut import Benchmark
+import time
+import numpy as np
+from umlaut import Benchmark, BenchmarkSupervisor, MemoryMetric, CPUMetric
+ 
+bm = Benchmark('sample_db_file.db', description="Database for the Github sample measurements")
 
-benchmark = Benchmark(db_file = 'hello_world.db', description = 'Measurements for benchmarking hello_world.py pipeline.')
+bloat_metrics = {
+    "memory": MemoryMetric('bloat memory', interval=0.1),
+    "cpu": CPUMetric('bloat cpu', interval=0.1)
+}
+```
+
+To benchmark a method, we attach a decorator (*BenchmarkSupervisor*) providing the metrics and the benchmark class. After the completion of the method, the *Benchmark* needs to be *closed*.
+
+```
+@BenchmarkSupervisor(bloat_metrics.values(), bm)
+def bloat():
+    a = []
+    for i in range(1, 2):
+        a.append(np.random.randn(*([10] * i)))
+        time.sleep(5)
+    print(a)
+
+def main():
+    bloat()
+    bm.close()
+
+if __name__ == "__main__":
+    main()
 ```
 
 ## Comand Line Interface
