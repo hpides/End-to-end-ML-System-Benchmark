@@ -68,9 +68,10 @@ if __name__ == "__main__":
     main()
 ```
 
-## Comand Line Interface
+## Command Line Interface
 
 Measurements are accessed through UMLAUT's CLI tool. It can be invoked from a *bash* terminal with the following command.
+**To access the CLI make sure you are in the umlaut directory**
 
 ```
 umlaut-cli <db_file>
