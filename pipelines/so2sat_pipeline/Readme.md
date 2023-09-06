@@ -17,3 +17,7 @@
 ## Requirements
 - you can find a requirements that are compatible with UMLAUT and the pipeline under
   - [requirements-updated.txt](requirements-updated.txt)
+
+- we uploaded a snapshot of our dev container to persist the environment
+  - [link to container](https://hub.docker.com/repository/docker/slin96/umlaut-so2sat/tags?page=1&ordering=last_updated)  
+  - **activate the env by**: `source /home/daphneusr/.virtualenvs/End-to-end-ML-System-Benchmark/bin/activate`
