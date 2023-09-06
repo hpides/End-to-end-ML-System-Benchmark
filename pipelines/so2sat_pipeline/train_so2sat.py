@@ -2,9 +2,9 @@ import h5py
 import umlaut as eb
 from benchmarking import bm
 
-from keras.models import Sequential
-from keras.layers import Dense, Flatten, Conv2D
-from keras.optimizers import Adam
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.layers import Dense, Flatten, Conv2D
+from tensorflow.keras.optimizers import Adam
 import tensorflow as tf
 
 
