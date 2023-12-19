@@ -132,6 +132,9 @@ class TTATracker:
             Description of tracked TTA.
         """
         serialized = self.serialize(accuracies)
+        for i in range(len(serialized) - 1):
+            if serialized[i] > serialized[i+1]:
+                serialized[i+1] = serialized[i]
         self.benchmark.log(description, self.MEASURE_TYPE, serialized, unit='accuracy')
 
     def serialize(self, accuracies):
@@ -146,7 +149,8 @@ class TTATracker:
         pickle object
             Serialized data.
         """
-        return pickle.dumps(accuracies)
+        #return pickle.dumps(accuracies)
+        return accuracies
 
 class LossTracker:
     MEASURE_TYPE = "loss"

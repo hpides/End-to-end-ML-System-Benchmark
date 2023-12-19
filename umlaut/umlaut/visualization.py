@@ -2,6 +2,7 @@ import logging
 from math import floor
 import pickle
 import sys
+import ast
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -185,6 +186,7 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
         plt.tight_layout()
         for _, row in self.df.iterrows():
             measurements = row['measurement_data']
+            measurements = [int(s) for s in measurements.split() if s.isdigit()]
             epoch_ids = np.arange(1, len(measurements) + 1)
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
             linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
@@ -233,6 +235,15 @@ class BarVisualizer(Visualizer):
         plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
+        #if self.df["measurement_type"].item() == "latency":
+        #    measurements = list(self.df["measurement_data"].iloc[0][1:-1].split(", "))
+        #    print(self.df["x_labels"])
+        #    #self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
+        #    plt.barh(x=self.df["x_labels"].item(), y=measurements[0], stacked=False, legend=False, ax=ax, width=30)
+        #else:
+        #    self.df["measurement_data"] = float(self.df["measurement_data"])
+        #    self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
+        self.df["measurement_data"] = float(self.df["measurement_data"])
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         
         plt.title(self.title)

@@ -11,7 +11,6 @@ from umlaut import Benchmark, ConfusionMatrixTracker, HyperparameterTracker, Ben
 
 bm = Benchmark('stock_market.db')
 
-
 lat = LatencyMetric('stock market latency')
 thr = ThroughputMetric('stock market throughput')
 tta = TTATracker(bm)

@@ -90,7 +90,8 @@ class Metric:
         pass
 
     def serialize(self):
-        return pickle.dumps(self.data)
+        return str(self.data)
+        #return pickle.dumps(self.data)
 
     def log(self, benchmark):
         pass
@@ -269,6 +270,7 @@ class LatencyMetric(Metric):
 
     def after(self):
         after_time = time.perf_counter()
+        #self.data = str([(after_time - self.before_time) / self.num_entries, self.num_entries])
         self.data = (after_time - self.before_time) / self.num_entries
 
 
@@ -283,7 +285,7 @@ class LatencyMetric(Metric):
         self.num_entries = num_entries
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Seconds/entry')
+        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry')
 
 
 class ThroughputMetric(Metric):
