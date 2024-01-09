@@ -12,6 +12,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
+import json
 
 class Visualizer:
     def __init__(self, df_from_cli, plotting_backend):
@@ -63,8 +64,9 @@ class ConfusionMatrixVisualizer(Visualizer):
         figs = []
         for _, row in self.df.iterrows():
             # every row needs to be visualized individually since each row corresponds to one confusion matrix
-            conf_mat_np = row['measurement_data']['matrix']
-            labels = row['measurement_data']['labels']
+            measurement_dict = json.loads(row['measurement_data'])
+            conf_mat_np = json.loads(measurement_dict['matrix'].replace(" ", ","))
+            labels = measurement_dict['labels']
             conf_mat_df = pd.DataFrame(conf_mat_np, 
                                        index=pd.Index(labels, name="predicted"),
                                        columns=pd.Index(labels, name="actual")
@@ -116,10 +118,11 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
 
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
+            measurement_dict = json.loads(measurement_dict)
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
             self.timedelta_lists.append(timestamps - timestamps[0])
-            if len(timestamps) > len(self.x_tick_vals):
-                x_tick_idx = np.floor(np.linspace(0, len(self.timedelta_lists[-1])-1, 5)).astype(int)
+            x_tick_idx = np.floor(np.linspace(0, len(self.timedelta_lists[-1])-1, 5)).astype(int)
+            if len(self.x_tick_vals) == 0 or self.timedelta_lists[-1][x_tick_idx][4] > self.x_tick_vals[4]:
                 self.x_tick_vals = self.timedelta_lists[-1][x_tick_idx]
                 self.x_tick_labels = self.x_tick_vals.map(self._strfdelta)
             self.measurements_lists.append(measurement_dict.pop('measurements'))
@@ -186,7 +189,6 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
         plt.tight_layout()
         for _, row in self.df.iterrows():
             measurements = row['measurement_data']
-            measurements = [int(s) for s in measurements.split() if s.isdigit()]
             epoch_ids = np.arange(1, len(measurements) + 1)
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
             linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
@@ -235,14 +237,6 @@ class BarVisualizer(Visualizer):
         plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
-        #if self.df["measurement_type"].item() == "latency":
-        #    measurements = list(self.df["measurement_data"].iloc[0][1:-1].split(", "))
-        #    print(self.df["x_labels"])
-        #    #self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
-        #    plt.barh(x=self.df["x_labels"].item(), y=measurements[0], stacked=False, legend=False, ax=ax, width=30)
-        #else:
-        #    self.df["measurement_data"] = float(self.df["measurement_data"])
-        #    self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         self.df["measurement_data"] = float(self.df["measurement_data"])
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         
@@ -324,6 +318,11 @@ class CPUVisualizer(TimebasedMultiLineChartVisualizer):
     xaxis_label = "Time elapsed since start of pipeline run"
     yaxis_label = "CPU usage in %"
 
+class TimedTTAVisualizer(BarVisualizer):
+    title = "Metric: Time to target accuracy"
+    xaxis_label = "Time elapsed since until target accuracy reached"
+    yaxis_label = "Time taken in seconds"
+
 type_to_visualizer_class_mapper = {
     "throughput" : ThroughputVisualizer,
     "latency" : LatencyVisualizer,
@@ -335,5 +334,6 @@ type_to_visualizer_class_mapper = {
     "tta" : TTAVisualizer,
     "confusion-matrix" : ConfusionMatrixVisualizer,
     "hyperparameters" : HyperparemeterVisualizer,
-    "cpu": CPUVisualizer
+    "cpu": CPUVisualizer,
+    "timed tta": TimedTTAVisualizer
     }
