@@ -11,6 +11,7 @@ import matplotlib.ticker as ticker
 import numpy as np
 import psutil
 import pyRAPL
+import json
 
 
 class BenchmarkSupervisor:
@@ -90,7 +91,7 @@ class Metric:
         pass
 
     def serialize(self):
-        return str(self.data)
+        return self.data
         #return pickle.dumps(self.data)
 
     def log(self, benchmark):
@@ -156,7 +157,8 @@ class MemoryMetric(Metric):
         }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit="MiB")
+        json_data = json.dumps(self.serialize(), indent=4, default=str)
+        benchmark.log(self.description, self.measure_type, json_data, unit="MiB")
 
         
 class EnergyMetric(Metric):
@@ -191,7 +193,8 @@ class EnergyMetric(Metric):
 
     def log(self, benchmark):
         if self.successful:
-            benchmark.log(self.description, self.measure_type, self.serialize(), unit='µJ')
+            json_data = json.dumps(self.serialize(), indent=4, default=str)
+            benchmark.log(self.description, self.measure_type, json_data, unit='µJ')
 
 
 class PowerMetric(Metric):
@@ -248,7 +251,8 @@ class PowerMetric(Metric):
 
     def log(self, benchmark):
         if self.successful:
-            benchmark.log(self.description, self.measure_type, self.serialize(), unit='Watt')
+            json_data = json.dumps(self.serialize(), indent=4, default=str)
+            benchmark.log(self.description, self.measure_type, json_data, unit='Watt')
 
 
 class LatencyMetric(Metric):
@@ -358,4 +362,5 @@ class CPUMetric(Metric):
         }
 
     def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit="%")
+        json_data = json.dumps(self.serialize(), indent=4, default=str)
+        benchmark.log(self.description, self.measure_type, json_data, unit="%")
