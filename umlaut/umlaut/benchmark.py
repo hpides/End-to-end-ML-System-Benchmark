@@ -106,9 +106,7 @@ class Benchmark:
                 while not self.queue.empty():
                     sleep(0)
                     measurement = self.queue.get()
-                    #print(measurement.measurement_type)
-                    #print(measurement.measurement_data)
-                    measurement.measurement_data = str(measurement.measurement_data)
+                    #measurement.measurement_data = str(measurement.measurement_data)
                     session.add(measurement)
                     log_staged = True
                 if log_staged:
@@ -186,7 +184,6 @@ class VisualizationBenchmark(Benchmark):
                                             Measurement.id.in_(uuid_type_desc_df.index))
         measure_col_names = [col_desc['name'] for col_desc in measurement_query.column_descriptions]
         measurement_df = pd.DataFrame(measurement_query.all(), columns=measure_col_names)
-        print(measurement_df)
         #measurement_df['measurement_data'] = measurement_df['measurement_data'].map(pickle.loads)
         measurement_df['measurement_data'] = measurement_df['measurement_data']
 
