@@ -2,6 +2,7 @@ import logging
 from math import floor
 import pickle
 import sys
+import ast
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -11,6 +12,7 @@ import pandas as pd
 import plotly.express as px
 import plotly.graph_objects as go
 import seaborn as sns
+import json
 
 class Visualizer:
     def __init__(self, df_from_cli, plotting_backend):
@@ -62,8 +64,9 @@ class ConfusionMatrixVisualizer(Visualizer):
         figs = []
         for _, row in self.df.iterrows():
             # every row needs to be visualized individually since each row corresponds to one confusion matrix
-            conf_mat_np = row['measurement_data']['matrix']
-            labels = row['measurement_data']['labels']
+            measurement_dict = json.loads(row['measurement_data'])
+            conf_mat_np = json.loads(measurement_dict['matrix'].replace(" ", ","))
+            labels = measurement_dict['labels']
             conf_mat_df = pd.DataFrame(conf_mat_np, 
                                        index=pd.Index(labels, name="predicted"),
                                        columns=pd.Index(labels, name="actual")
@@ -115,10 +118,11 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
 
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
+            measurement_dict = json.loads(measurement_dict)
             timestamps = pd.to_datetime(measurement_dict.pop('timestamps'))
             self.timedelta_lists.append(timestamps - timestamps[0])
-            if len(timestamps) > len(self.x_tick_vals):
-                x_tick_idx = np.floor(np.linspace(0, len(self.timedelta_lists[-1])-1, 5)).astype(int)
+            x_tick_idx = np.floor(np.linspace(0, len(self.timedelta_lists[-1])-1, 5)).astype(int)
+            if len(self.x_tick_vals) == 0 or self.timedelta_lists[-1][x_tick_idx][4] > self.x_tick_vals[4]:
                 self.x_tick_vals = self.timedelta_lists[-1][x_tick_idx]
                 self.x_tick_labels = self.x_tick_vals.map(self._strfdelta)
             self.measurements_lists.append(measurement_dict.pop('measurements'))
@@ -233,6 +237,7 @@ class BarVisualizer(Visualizer):
         plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
+        self.df["measurement_data"] = float(self.df["measurement_data"])
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         
         plt.title(self.title)
@@ -313,6 +318,11 @@ class CPUVisualizer(TimebasedMultiLineChartVisualizer):
     xaxis_label = "Time elapsed since start of pipeline run"
     yaxis_label = "CPU usage in %"
 
+class TimedTTAVisualizer(BarVisualizer):
+    title = "Metric: Time to target accuracy"
+    xaxis_label = "Time elapsed since until target accuracy reached"
+    yaxis_label = "Time taken in seconds"
+
 type_to_visualizer_class_mapper = {
     "throughput" : ThroughputVisualizer,
     "latency" : LatencyVisualizer,
@@ -324,5 +334,6 @@ type_to_visualizer_class_mapper = {
     "tta" : TTAVisualizer,
     "confusion-matrix" : ConfusionMatrixVisualizer,
     "hyperparameters" : HyperparemeterVisualizer,
-    "cpu": CPUVisualizer
+    "cpu": CPUVisualizer,
+    "timed tta": TimedTTAVisualizer
     }

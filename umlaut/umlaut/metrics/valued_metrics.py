@@ -1,4 +1,6 @@
 import pickle
+import json
+import time
 
 import pandas as pd
 
@@ -44,7 +46,9 @@ class ConfusionMatrixTracker:
         pickle object
             Serialized data.
         """
-        return pickle.dumps({'matrix': matrix, 'labels': labels})
+        #return pickle.dumps({'matrix': matrix, 'labels': labels})
+        return json.dumps({'matrix': matrix, 'labels': labels}, indent=4, default=str)
+
 
 class HyperparameterTracker:
     MEASURE_TYPE = "hyperparameters"
@@ -103,12 +107,19 @@ class HyperparameterTracker:
         pickle object
             Serialized data.
         """
-        return pickle.dumps({
-            'hyperparameters' : self.hyperparameters,
-            'df' : self.df.to_dict(orient='list'),
-            'target' : self.target,
-            'low_means_good' : self.low_means_good
-        })
+        #return pickle.dumps({
+        #    'hyperparameters' : self.hyperparameters,
+        #    'df' : self.df.to_dict(orient='list'),
+        #    'target' : self.target,
+        #    'low_means_good' : self.low_means_good
+        #})
+        return {
+            'hyperparameters': self.hyperparameters,
+            'df': self.df.to_dict(orient='list'),
+            'target': self.target,
+            'low_means_good': self.low_means_good
+        }
+
 
 class TTATracker:
     MEASURE_TYPE = "tta"
@@ -132,6 +143,9 @@ class TTATracker:
             Description of tracked TTA.
         """
         serialized = self.serialize(accuracies)
+        for i in range(len(serialized) - 1):
+            if serialized[i] > serialized[i+1]:
+                serialized[i+1] = serialized[i]
         self.benchmark.log(description, self.MEASURE_TYPE, serialized, unit='accuracy')
 
     def serialize(self, accuracies):
@@ -146,7 +160,10 @@ class TTATracker:
         pickle object
             Serialized data.
         """
-        return pickle.dumps(accuracies)
+        #return pickle.dumps(accuracies)
+        accuracies = accuracies.tolist()
+        return accuracies
+
 
 class LossTracker:
     MEASURE_TYPE = "loss"
@@ -184,4 +201,51 @@ class LossTracker:
         pickle object
             Serialized data.
         """
-        return pickle.dumps(loss_values)
+        #return pickle.dumps(loss_values)
+        loss_values = loss_values.tolist()
+        return loss_values
+
+
+class TimedTTATracker:
+    MEASURE_TYPE = "timed tta"
+
+    def __init__(self, benchmark, target_acc):
+        """
+        Parameters
+        ----------
+        benchmark : Benchmark
+            Benchmark object to store the data in / retrieve it from.
+        """
+        self.benchmark = benchmark
+        self.target_acc = target_acc
+        self.time = time.perf_counter()
+        self.logged = False
+
+    def track(self, accuracy, description):
+        """
+        Parameters
+        ----------
+        accuracy : int
+            Current accuracy of the run.
+        description : str
+            Description of tracked timed TTA.
+        """
+        if accuracy >= self.target_acc and not self.logged:
+            self.benchmark.log(description + " (Target: " + str(self.target_acc) + ")", self.MEASURE_TYPE, time.perf_counter() - self.time, unit='time for target accuracy')
+            self.logged = True
+
+    def serialize(self, accuracies):
+        """
+        Parameters
+        ----------
+        accuracies : list of ints
+            List of tracked accuracies of the run.
+
+        Returns
+        -------
+        pickle object
+            Serialized data.
+        """
+        #return pickle.dumps(accuracies)
+        accuracies = accuracies.tolist()
+        return accuracies
