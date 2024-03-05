@@ -3,6 +3,7 @@ from math import floor
 import pickle
 import sys
 import ast
+import statistics
 
 import matplotlib.pyplot as plt
 import matplotlib.ticker as ticker
@@ -24,6 +25,8 @@ class Visualizer:
             return self.plot_with_matplotlib()
         if self.plotting_backend == 'plotly':
             return self.plot_with_plotly()
+        if self.plotting_backend == 'text':
+            return self.plot_with_text()
 
 class HyperparemeterVisualizer(Visualizer):
     def plot_with_plotly(self):
@@ -134,7 +137,16 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         hours, remainder = divmod(td.total_seconds(), 3600)
         minutes, seconds = divmod(remainder, 60)
         return f"{int(hours)}h {int(minutes)}m {seconds:.2f}s"
-    
+
+    def plot_with_text(self):
+        for i in range(len(self.measurements_lists)):
+            print("Statistics for operation " + str(i+1) + ":\n")
+            print("MAX: " + str(max(self.measurements_lists[i])))
+            print("MIN: " + str(min(self.measurements_lists[i])))
+            print("MEAN: " + str(statistics.mean(self.measurements_lists[i])))
+            print("ST DEV: " + str(statistics.stdev(self.measurements_lists[i])))
+            print("===================================" + "\n")
+
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
@@ -232,12 +244,16 @@ class BarVisualizer(Visualizer):
         df_from_cli['x_labels'] = " \"" + df_from_cli['measurement_description'] + "\"\nfrom\n" + df_from_cli['measurement_time_str']
         df_from_cli.sort_values(by='measurement_datetime', inplace=True)
         self.df = df_from_cli
-    
+
+    def plot_with_text(self):
+        print("Time needed for each operation: \n")
+        print(self.df["measurement_data"])
+
+
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 18})
         fig, ax = plt.subplots()
         plt.tight_layout()
-        self.df["measurement_data"] = float(self.df["measurement_data"])
         self.df.plot.barh(x='x_labels', y='measurement_data', stacked=False, legend=False, ax=ax)
         
         plt.title(self.title)
@@ -272,6 +288,7 @@ class BarVisualizer(Visualizer):
         )
         
         return [fig]
+
 
 class ThroughputVisualizer(BarVisualizer):
     title = "Metric: Throughput"
