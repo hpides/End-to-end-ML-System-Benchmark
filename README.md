@@ -147,6 +147,21 @@ In the *pipelines* folder, there are several examples of the following pipelines
 * Stock Market Prediction [[description]](https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f) [[umlaut pipeline]](./pipelines/stock_market_pipeline)
 * MNIST Digit Recognition [[description]](https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb) [[umlaut pipeline]](./pipelines/MNIST_pipeline)
 
+* Meta Benchmarking Pipeline for initial testing:
+By running the provided sh files, a set of operations (sleeping, sorting, matrix multiplication) can be run to test Umlaut on your own system. Furthermore the provided python file can be run for customized testing with the following arguments:
+
+-t / --time to activate runtime measurements\
+-m / --memory to activate memory measurements\
+  -mf / --memoryfreq to specify the interval for memory measurements\
+-c / --cpu to activate cpu measurements\
+  -cf / --cpufreq to specify the interval for cpu measurements\  
+-o / --order to specify which operations to run ("sleep", "sort", "mult", "vw", in any order and as often as desired)
+-r / --repeat to specify how often the set of operations should be repeated
+
+Umlaut should have a memory overhead of ~130 MB, a CPU usage of 10-20% when idle and close to no time overhead.
+When sorting, memory usage should have a mean and max of within 1000-1100 MB.
+When matrix multiplying, CPU usage should have a mean of ~90%.
+
 ## Documentation
 * https://hpides.github.io/End-to-end-ML-System-Benchmark/
 
