@@ -1,22 +1,30 @@
 import h5py
-from sklearn.metrics import confusion_matrix
 import numpy as np
-import os
-import sys
-import umlaut
-from benchmarking import bm
+from sklearn.metrics import confusion_matrix
+
 import umlaut as eb
+from benchmarking import bm
+from umlaut import TimeMetric, \
+    MemoryMetric, PowerMetric, EnergyMetric, CPUMetric
+
+test_metrics = {
+    "time": TimeMetric('test time'),
+    "memory": MemoryMetric('test memory', interval=0.1),
+    "power": PowerMetric('test power'),
+    "energy": EnergyMetric('test energy'),
+    "cpu": CPUMetric('test cpu', interval=0.1)
+}
 
 
-@eb.BenchmarkSupervisor([eb.MemoryMetric('test memory'), eb.TimeMetric('test time')], bm)
+@eb.BenchmarkSupervisor(test_metrics.values(), bm)
 def test(model):
     cmt = eb.ConfusionMatrixTracker(bm)
 
     # n = 32768  # 2**15
-    n = 1024
+    n = 102400
     img_width, img_height, img_num_channels = 32, 32, 8
 
-    f = h5py.File('data/testing.h5', 'r')
+    f = h5py.File('/mount-fs/testing.h5', 'r')
     input_test = f['sen1'][0:n]
     label_test = f['label'][0:n]
     f.close()

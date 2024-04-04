@@ -1,20 +1,22 @@
 import h5py
+import tensorflow as tf
+from tensorflow.keras.layers import Dense, Flatten, Conv2D
+from tensorflow.keras.models import Sequential
+from tensorflow.keras.optimizers import Adam
+
 import umlaut as eb
 from benchmarking import bm
-
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten, Conv2D
-from tensorflow.keras.optimizers import Adam
-import tensorflow as tf
+from umlaut import TimeMetric, \
+    MemoryMetric, PowerMetric, EnergyMetric, CPUMetric
 
 
 def load_data(num_samples=0):
-    f = h5py.File('data/training.h5', 'r')
+    f = h5py.File('/mount-fs/training.h5', 'r')
     n = num_samples or len(f['label'])
     input_train = f['sen1'][0:n]
     label_train = f['label'][0:n]
     f.close()
-    f = h5py.File('data/validation.h5', 'r')
+    f = h5py.File('/mount-fs/validation.h5', 'r')
     input_val = f['sen1'][0:len(f['label'])]
     label_val = f['label'][0:len(f['label'])]
     f.close()
@@ -40,7 +42,16 @@ def compile_model(input_shape, num_classes, loss_function, optimizer):
     return model
 
 
-@eb.BenchmarkSupervisor([eb.MemoryMetric('train memory'), eb.TimeMetric('train time')], bm)
+train_metrics = {
+    "time": TimeMetric('train time'),
+    "memory": MemoryMetric('train memory', interval=0.1),
+    "power": PowerMetric('train power'),
+    "energy": EnergyMetric('train energy'),
+    "cpu": CPUMetric('train cpu', interval=0.1)
+}
+
+
+@eb.BenchmarkSupervisor(train_metrics.values(), bm)
 def train():
     batch_size = 256
     img_width, img_height, img_num_channels = 32, 32, 8
@@ -51,7 +62,7 @@ def train():
     optimizer = Adam()
     verbosity = 1
 
-    n = 2048
+    n = 2048 * 10
     # n = 0
     input_train, label_train, input_val, label_val = load_data(n)
 
