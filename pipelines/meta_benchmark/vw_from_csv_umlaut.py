@@ -4,9 +4,9 @@ from pathlib import Path
 import pandas as pd
 import numpy as np
 import typer
-from kai_benchmark import bm
+# from kai_benchmark import bm
 import umlaut as eb
-from line_simplification import vw_line
+# from line_simplification import vw_line
 
 
 #@eb.BenchmarkSupervisor([eb.PowerMetric('end-to-end power'), eb.TimeMetric('end-to-end runtime'), eb.MemoryMetric('end-to-end memory', interval=1), eb.CPUMetric('end-to-end CPU us', interval=1)], bm)
@@ -36,8 +36,10 @@ def process(csv_file: Path, min_points: int, max_points: int, tolerance: float):
     power_over_time = pd.DataFrame(data=time, index=None, columns=["time"])
     power_over_time["power"] = p_tot
 
-    reduced_idxs = vw_line(data=power_over_time, max_points=max_points, min_points=min_points, tolerance=tolerance)
-    print(reduced_idxs)
+    # reduced_idxs = vw_line(data=power_over_time, max_points=max_points, min_points=min_points, tolerance=tolerance)
+    # print(reduced_idxs)
+    print("PROBLEM")
+    print(power_over_time.head())
 
 
 if __name__ == "__main__":
