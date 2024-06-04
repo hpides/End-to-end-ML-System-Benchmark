@@ -6,13 +6,18 @@ from meta_benchmark import bm
 import argparse
 import subprocess
 from vw_from_csv_umlaut import main as vw_main
+import torch
 
 parser = argparse.ArgumentParser(description="Umlaut benchmark configs",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
 parser.add_argument("-m", "--memory", action="store_true", help="activate memory measurement", default=False)
+parser.add_argument("-gm", "--gpumemory", action="store_true", help="activate gpu memory measurement", default=False)
+parser.add_argument("-gt", "--gputime", action="store_true", help="activate gpu memory measurement", default=False)
+parser.add_argument("-gp", "--gpupower", action="store_true", help="activate gpu memory measurement", default=False)
 parser.add_argument("-t", "--time", action="store_true", help="activate time measurement", default=False)
 parser.add_argument("-c", "--cpu", action="store_true", help="activate cpu measurement", default=False)
+parser.add_argument("-g", "--gpu", action="store_true", help="activate gpu measurement", default=False)
 parser.add_argument("-mf", "--memoryfreq", type=float, help="Interval for memory measurement", default=0.1)
 parser.add_argument("-cf", "--cpufreq", type=float, help="Interval for cpu measurement", default=0.1)
 parser.add_argument("-o", "--order", nargs="+", help="Specify the order of operations, multiple measurements of same kind possible.\n"
@@ -22,12 +27,28 @@ args = parser.parse_args()
 config = vars(args)
 
 metrics = []
+types = []
 if config["memory"]:
     metrics.append(eb.MemoryMetric('memory', interval=config["memoryfreq"]))
+    types.append("memory")
+if config["gpumemory"]:
+    metrics.append(eb.GPUMemoryMetric('gpumemory', interval=config["memoryfreq"]))
+    types.append("gpumemory")
 if config["cpu"]:
     metrics.append(eb.CPUMetric('cpu', interval=config["cpufreq"]))
+    types.append("cpu")
+if config["gpu"]:
+    metrics.append(eb.GPUMetric('gpu', interval=config["cpufreq"]))
+    types.append("gpu")
+if config["gpupower"]:
+    metrics.append(eb.GPUPowerMetric('gpupower', interval=config["cpufreq"]))
+    types.append("gpupower")
+if config["gputime"]:    
+    metrics.append(eb.GPUTimeMetric('gputime'))
+    types.append("gputime")
 if config["time"] or len(metrics) == 0:
     metrics.append(eb.TimeMetric('time'))
+    types.append("time")
 
 
 @eb.BenchmarkSupervisor(metrics, bm)
@@ -48,11 +69,23 @@ def sleep():
 
 @eb.BenchmarkSupervisor(metrics, bm)
 def matrix_mult():
+    # print("Matrix Multiplying")
+    # a = np.random.random((10000, 10000))
+    # b = np.random.random((10000, 10000))
+    # ab = np.matmul(a, b)
+    # print(ab)
     print("Matrix Multiplying")
-    a = np.random.random((10000, 10000))
-    b = np.random.random((10000, 10000))
-    ab = np.matmul(a, b)
-    print(ab)
+    # Create random matrices and move them to the GPU
+    a = torch.rand((20000, 20000), device='cuda')
+    b = torch.rand((20000, 20000), device='cuda')
+    
+    # Perform matrix multiplication on the GPU
+    ab = torch.matmul(a, b)
+    
+    # Move result back to CPU and print (optional, here we'll print only a small part of it)
+    ab_cpu = ab.cpu()
+    print(ab_cpu[:5, :5])
+
 
 
 @eb.BenchmarkSupervisor(metrics, bm)
@@ -75,7 +108,7 @@ def main():
     print(uuid)
     bm.close()
 
-    subprocess.run(["umlaut-cli", "benchmark.db", "-u", uuid, "-t", "time", "memory", "cpu", "-d", "time", "memory", "cpu", "-p", "text"])
+    subprocess.run(["umlaut-cli", "benchmark.db", "-u", uuid, "-t"]+types+["-d"]+types+["-p", "plotly"])
 
 
 if __name__ == "__main__":

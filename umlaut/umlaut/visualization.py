@@ -305,6 +305,11 @@ class PowerVisualizer(TimebasedMultiLineChartVisualizer):
     xaxis_label = "Time elapsed since start of pipeline run"
     yaxis_label = "Watt"
 
+class GPUPowerVisualizer(TimebasedMultiLineChartVisualizer):
+    title = "Metric: GPU Power"
+    xaxis_label = "Time elapsed since start of pipeline run"
+    yaxis_label = "Watt"
+
 class EnergyVisualizer(BarVisualizer):
     title = "Metric: Power"
     xaxis_label = "Time elapsed since start of pipeline run"
@@ -315,7 +320,17 @@ class MemoryVisualizer(TimebasedMultiLineChartVisualizer):
     xaxis_label = "Seconds elapsed since start of pipeline run"
     yaxis_label = "Memory usage in MB"
 
+class GPUMemoryVisualizer(TimebasedMultiLineChartVisualizer):
+    title = "Metric: GPU Memory usage"
+    xaxis_label = "Seconds elapsed since start of pipeline run"
+    yaxis_label = "GPU Memory usage in MB"
+
 class TimeVisualizer(BarVisualizer):
+    title = "Metric: Time"
+    xaxis_label = ""
+    yaxis_label = "Time taken in seconds"
+
+class GPUTimeVisualizer(BarVisualizer):
     title = "Metric: Time"
     xaxis_label = ""
     yaxis_label = "Time taken in seconds"
@@ -335,6 +350,11 @@ class CPUVisualizer(TimebasedMultiLineChartVisualizer):
     xaxis_label = "Time elapsed since start of pipeline run"
     yaxis_label = "CPU usage in %"
 
+class GPUVisualizer(TimebasedMultiLineChartVisualizer):
+    title = "Metric: GPU usage"
+    xaxis_label = "Time elapsed since start of pipeline run"
+    yaxis_label = "GPU usage in %"
+
 class TimedTTAVisualizer(BarVisualizer):
     title = "Metric: Time to target accuracy"
     xaxis_label = "Time elapsed since until target accuracy reached"
@@ -344,13 +364,17 @@ type_to_visualizer_class_mapper = {
     "throughput" : ThroughputVisualizer,
     "latency" : LatencyVisualizer,
     "power" : PowerVisualizer,
+    "gpupower": GPUPowerVisualizer,
     "energy" : EnergyVisualizer,
     "memory" : MemoryVisualizer,
+    "gpumemory" : GPUMemoryVisualizer,
     "time" : TimeVisualizer,
+    "gputime" : GPUTimeVisualizer,
     "loss" : LossVisualizer,
     "tta" : TTAVisualizer,
     "confusion-matrix" : ConfusionMatrixVisualizer,
     "hyperparameters" : HyperparemeterVisualizer,
     "cpu": CPUVisualizer,
+    "gpu": GPUVisualizer,
     "timed tta": TimedTTAVisualizer
     }
