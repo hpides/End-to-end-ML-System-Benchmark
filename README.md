@@ -22,6 +22,20 @@ Or, through **pip**:
 pip install -e <PATH_TO_REPOSITORY>/umlaut/
 ```
 
+### Docker setup
+Alternatively you can run umlaut or umplaut + daphne in a docker container. 
+You can find them in /containers.
+
+Run
+```
+sudo docker build -t umlaut containers/umlaut_daphne
+```
+
+to build a container and start it by running
+
+```
+bash containers/umlaut_daphne/start.sh
+```
 
 
 ## System Integration
@@ -66,6 +80,14 @@ def main():
 
 if __name__ == "__main__":
     main()
+```
+
+## Running you Scripts with umlaut
+
+You can run your custom pipeline by providing the path to you python file. 
+You can specify the different kinds of measurements.
+```
+python pipelines/custom_pipeline/run_script.py -s <your script> -g -gm -gt -gp -t -c -m
 ```
 
 ## Comand Line Interface
