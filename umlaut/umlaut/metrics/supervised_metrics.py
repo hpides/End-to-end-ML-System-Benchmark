@@ -33,6 +33,7 @@ class BenchmarkSupervisor:
 
     def __call__(self, func):
         def inner(*args, **kwargs):
+            self.method_name = func.__name__
             finish_event = threading.Event()
             with ThreadPoolExecutor(max_workers=len(self.metrics)) as tpe:
                 try:
@@ -68,7 +69,7 @@ class BenchmarkSupervisor:
 
     def __log(self):
         for metric in self.metrics:
-            metric.log(self.benchmark)
+            metric.log(self.benchmark, self.method_name)
 
 
 class Metric:
@@ -95,7 +96,7 @@ class Metric:
         return self.data
         #return pickle.dumps(self.data)
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         pass
 
 
@@ -118,8 +119,8 @@ class TimeMetric(Metric):
         after_time = time.perf_counter()
         self.data = after_time - self.before_time
 
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec')
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
 
 class GPUTimeMetric(Metric):
     """The metric object to measure the time taken for GPU execution
@@ -144,8 +145,8 @@ class GPUTimeMetric(Metric):
         elapsed_time = self.start_event.elapsed_time(self.end_event)  # Time in milliseconds
         self.data = elapsed_time / 1000.0  # Convert to seconds
 
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec')
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
 
 class GPUMemoryMetric(Metric):
     """The metric object to measure GPU memory used in the execution
@@ -184,9 +185,9 @@ class GPUMemoryMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="MiB")
+        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
 
 class MemoryMetric(Metric):
     """The metric object to measure memory used in the execution
@@ -223,10 +224,9 @@ class MemoryMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="MiB")
-
+        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
         
 class EnergyMetric(Metric):
     """The metric object to measure energy used in the execution
@@ -258,11 +258,10 @@ class EnergyMetric(Metric):
             self.meter.end()
             self.data = sum(self.meter.result.pkg)
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='µJ')
-
+            benchmark.log(self.description, self.measure_type, json_data, unit='µJ', method_name=decorated_method_name)
 
 class PowerMetric(Metric):
     """The metric object to measure power used in the execution
@@ -316,11 +315,10 @@ class PowerMetric(Metric):
                 'interval' : self.interval
             }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='Watt')
-
+            benchmark.log(self.description, self.measure_type, json_data, unit='Watt', method_name=decorated_method_name)
 
 class LatencyMetric(Metric):
     """The metric object to measure latency of the pipeline function
@@ -355,9 +353,8 @@ class LatencyMetric(Metric):
         """
         self.num_entries = num_entries
 
-    def log(self, benchmark):
-        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry')
-
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry', method_name=decorated_method_name)
 
 class ThroughputMetric(Metric):
     """The metric object to measure throughput of the pipeline function
@@ -390,9 +387,8 @@ class ThroughputMetric(Metric):
         """
         self.num_entries = num_entries
 
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second')
-
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second', method_name=decorated_method_name)
 
 class CPUMetric(Metric):
     """The metric object to measure CPU usage of the running Python instance in percent
@@ -428,10 +424,9 @@ class CPUMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="%")
-
+        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
 
 class GPUMetric(Metric):
     """The metric object to measure GPU usage of the running instance in percent
@@ -471,9 +466,9 @@ class GPUMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="%")
+        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
 
 class GPUPowerMetric(Metric):
     """The metric object to measure GPU power usage of the running instance in watts
@@ -513,7 +508,7 @@ class GPUPowerMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="W")
+        benchmark.log(self.description, self.measure_type, json_data, unit="W", method_name=decorated_method_name)
 

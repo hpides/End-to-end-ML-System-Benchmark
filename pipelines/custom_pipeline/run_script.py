@@ -4,16 +4,15 @@ import argparse
 import umlaut
 import subprocess
 
-
 def main():
     parser = argparse.ArgumentParser(description="Umlaut benchmark configs",
-                                 formatter_class=argparse.ArgumentDefaultsHelpFormatter)
+                                     formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
-    parser.add_argument("-s", "--script", type=str, help="Path to the script to execute", required=True)
+    parser.add_argument("-cmd", "--command", type=str, help="Command to execute", required=True)
     parser.add_argument("-m", "--memory", action="store_true", help="activate memory measurement", default=False)
     parser.add_argument("-gm", "--gpumemory", action="store_true", help="activate gpu memory measurement", default=False)
-    parser.add_argument("-gt", "--gputime", action="store_true", help="activate gpu memory measurement", default=False)
-    parser.add_argument("-gp", "--gpupower", action="store_true", help="activate gpu memory measurement", default=False)
+    parser.add_argument("-gt", "--gputime", action="store_true", help="activate gpu time measurement", default=False)
+    parser.add_argument("-gp", "--gpupower", action="store_true", help="activate gpu power measurement", default=False)
     parser.add_argument("-t", "--time", action="store_true", help="activate time measurement", default=False)
     parser.add_argument("-c", "--cpu", action="store_true", help="activate cpu measurement", default=False)
     parser.add_argument("-g", "--gpu", action="store_true", help="activate gpu measurement", default=False)
@@ -49,39 +48,33 @@ def main():
     bm = umlaut.Benchmark('custom_script.db', description="Benchmark custom scripts.")
 
     @umlaut.BenchmarkSupervisor(metrics, bm)
-    def execute_script(script_path):
-        if not os.path.isfile(script_path):
-            print(f"The file {script_path} does not exist.")
-            return
+    def execute_command(command):
+        # Change the working directory to the script's directory if provided
+        original_dir = os.getcwd()
+        command_parts = command.split()
+        if command_parts[0] == "python" and len(command_parts) > 1:
+            script_path = command_parts[1]
+            if os.path.isfile(script_path):
+                script_dir = os.path.dirname(os.path.abspath(script_path))
+                os.chdir(script_dir)
+                # Modify the script path to be relative to the new working directory
+                command_parts[1] = os.path.basename(script_path)
+                command = " ".join(command_parts)
 
-        if not script_path.endswith('.py'):
-            print("Please provide a Python script file.")
-            return
-
-        script_dir = os.path.dirname(script_path)
-        script_name = os.path.basename(script_path)
-
-        # Add the script's directory to PYTHONPATH
-        sys.path.insert(0, script_dir)
-
-        try:
-            with open(script_path) as f:
-                code = compile(f.read(), script_path, 'exec')
-                exec(code, globals())
-        except Exception as e:
-            print(f"Error executing the script: {e}")
-        finally:
-            # Remove the directory from PYTHONPATH
-            sys.path.pop(0)
-
+        print(command)
+        # Print the current directory
+        print(f"Current directory: {os.getcwd()}")
+        subprocess.run(command.split(" "), timeout=600)
+        os.chdir(original_dir)
+ 
     
-    execute_script(config["script"])
+    execute_command(config["command"])
 
     uuid = bm.uuid
     print("UUID", uuid)
     bm.close()
 
-    subprocess.run(["umlaut-cli", "custom_script.db", "-u", uuid, "-t"]+types+["-d"]+types+["-p", "plotly"])
+    subprocess.run(["umlaut-cli", "custom_script.db", "-u", uuid, "-t"] + types + ["-d"] + types + ["-p", "plotly"])
 
 if __name__ == "__main__":
     main()

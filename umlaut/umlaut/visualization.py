@@ -119,6 +119,8 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         self.measurements_lists = []
         self.linelabels = []
 
+        self.df.to_csv("/home/philipp.hildebrandt/End-to-end-ML-System-Benchmark/datadf.csv")
+
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
             measurement_dict = json.loads(measurement_dict)
@@ -130,7 +132,7 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
                 self.x_tick_labels = self.x_tick_vals.map(self._strfdelta)
             self.measurements_lists.append(measurement_dict.pop('measurements'))
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
-            self.linelabels.append("\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time)
+            self.linelabels.append("\"" + row['measured_method_name'] + "\"\nfrom\n" + measurement_time)
 
 
     def _strfdelta(self, td):
@@ -203,7 +205,7 @@ class EpochbasedMultiLineChartVisualizer(Visualizer):
             measurements = row['measurement_data']
             epoch_ids = np.arange(1, len(measurements) + 1)
             measurement_time = row['measurement_datetime'].strftime("%Y-%m-%d %H:%M:%S")
-            linelabel = "\"" + row['measurement_description'] + "\"\nfrom\n" + measurement_time
+            linelabel = "\"" + row['measured_method_name'] + "\"\nfrom\n" + measurement_time
             
             ax.plot(epoch_ids, measurements, label=linelabel)
         
@@ -241,7 +243,7 @@ class BarVisualizer(Visualizer):
     def __init__(self, df_from_cli, plotting_backend):
         super().__init__(df_from_cli, plotting_backend)
         df_from_cli['measurement_time_str'] = df_from_cli['measurement_datetime'].dt.strftime("%Y-%m-%d %H:%M:%S")
-        df_from_cli['x_labels'] = " \"" + df_from_cli['measurement_description'] + "\"\nfrom\n" + df_from_cli['measurement_time_str']
+        df_from_cli['x_labels'] = " \"" + df_from_cli['measured_method_name'] + "\"\nfrom\n" + df_from_cli['measurement_time_str']
         df_from_cli.sort_values(by='measurement_datetime', inplace=True)
         self.df = df_from_cli
 

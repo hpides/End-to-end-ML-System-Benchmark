@@ -117,13 +117,14 @@ class Benchmark:
         finally:
             session.close()
 
-    def log(self, description, measure_type, value, unit=''):
+    def log(self, description, measure_type, value, unit='', method_name=""):
         measurement = Measurement(measurement_datetime=datetime.now(),
                                   uuid=self.uuid,
                                   measurement_description=description,
                                   measurement_type=measure_type,
                                   measurement_data=value,
-                                  measurement_unit=unit)
+                                  measurement_unit=unit,
+                                  measured_method_name=method_name)
         self.queue.put(measurement)
 
 class VisualizationBenchmark(Benchmark):
@@ -176,13 +177,16 @@ class VisualizationBenchmark(Benchmark):
                                     BenchmarkMetadata.uuid.in_(uuid_type_desc_df['uuid']))
         meta_col_names = [col_desc['name'] for col_desc in meta_query.column_descriptions]
         meta_df = pd.DataFrame(meta_query.all(), columns=meta_col_names)
+        print("META_COLUMN_NAMES", meta_col_names)
 
         measurement_query = self.query(Measurement.id,
                                        Measurement.measurement_datetime,
                                        Measurement.measurement_data,
-                                       Measurement.measurement_unit).filter(
+                                       Measurement.measurement_unit,
+                                       Measurement.measured_method_name).filter(
                                             Measurement.id.in_(uuid_type_desc_df.index))
         measure_col_names = [col_desc['name'] for col_desc in measurement_query.column_descriptions]
+        print("COLUMN_NAMES", measure_col_names)
         measurement_df = pd.DataFrame(measurement_query.all(), columns=measure_col_names)
         #measurement_df['measurement_data'] = measurement_df['measurement_data'].map(pickle.loads)
         measurement_df['measurement_data'] = measurement_df['measurement_data']

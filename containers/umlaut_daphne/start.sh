@@ -41,4 +41,7 @@ fi
 $USE_SUDO docker run  -it --rm --hostname daphne-container \
     -e GID=$GID -e TERM=screen-256color -e PATH \
     -e USER=$USERNAME -e UID=$UID \
-    -v /home/philipp.hildebrandt/daphnelib_umlaut_example:/app/daphnelib_umlaut_example --entrypoint /bin/bash "umlaut" 
+    -v /home/philipp.hildebrandt/daphnelib_umlaut_example:/app/daphnelib_umlaut_example \
+    -v /home/philipp.hildebrandt/End-to-end-ML-System-Benchmark:/app/new_umlaut \
+    -v /home/philipp.hildebrandt/kai_material-degradation-master:/app/kai_material-degradation-master \
+    --entrypoint /bin/bash "umlaut" 
