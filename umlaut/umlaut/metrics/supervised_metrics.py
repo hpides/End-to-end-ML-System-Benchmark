@@ -27,13 +27,15 @@ class BenchmarkSupervisor:
     benchmark: Benchmark
         The central benchmark object used in the pipeline
     """
-    def __init__(self, metrics, benchmark):
+    def __init__(self, metrics, benchmark, name=None):
         self.metrics = sorted(metrics)
         self.benchmark = benchmark
+        self.method_name = name
 
     def __call__(self, func):
         def inner(*args, **kwargs):
-            self.method_name = func.__name__
+            if self.method_name is None:
+                self.method_name = func.__name__
             finish_event = threading.Event()
             with ThreadPoolExecutor(max_workers=len(self.metrics)) as tpe:
                 try:

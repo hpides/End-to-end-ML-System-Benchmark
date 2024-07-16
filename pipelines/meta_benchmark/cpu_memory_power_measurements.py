@@ -5,8 +5,7 @@ import umlaut as eb
 from meta_benchmark import bm
 import argparse
 import subprocess
-from vw_from_csv_umlaut import main as vw_main
-import torch
+
 
 parser = argparse.ArgumentParser(description="Umlaut benchmark configs",
                                  formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -69,23 +68,25 @@ def sleep():
 
 @eb.BenchmarkSupervisor(metrics, bm)
 def matrix_mult():
-    # print("Matrix Multiplying")
-    # a = np.random.random((10000, 10000))
-    # b = np.random.random((10000, 10000))
-    # ab = np.matmul(a, b)
-    # print(ab)
-    print("Matrix Multiplying")
-    # Create random matrices and move them to the GPU
-    a = torch.rand((20000, 20000), device='cuda')
-    b = torch.rand((20000, 20000), device='cuda')
-    
-    # Perform matrix multiplication on the GPU
-    ab = torch.matmul(a, b)
-    
-    # Move result back to CPU and print (optional, here we'll print only a small part of it)
-    ab_cpu = ab.cpu()
-    print(ab_cpu[:5, :5])
-
+    if any(["gpu" in t for t in types]):
+        print("Matrix Multiplying on the GPU")
+        import torch
+        # Create random matrices and move them to the GPU
+        a = torch.rand((20000, 20000), device='cuda')
+        b = torch.rand((20000, 20000), device='cuda')
+        
+        # Perform matrix multiplication on the GPU
+        ab = torch.matmul(a, b)
+        
+        # Move result back to CPU and print (optional, here we'll print only a small part of it)
+        ab_cpu = ab.cpu()
+        print(ab_cpu[:5, :5])  
+    else:
+        print("Matrix Multiplying")
+        a = np.random.random((10000, 10000))
+        b = np.random.random((10000, 10000))
+        ab = np.matmul(a, b)
+        print(ab)
 
 
 @eb.BenchmarkSupervisor(metrics, bm)

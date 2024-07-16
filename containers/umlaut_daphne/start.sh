@@ -33,13 +33,15 @@ CUDA_PATH=/usr/local/cuda
 PATH=/opt/nvidia/nsight-compute/2023.2.2/host/target-linux-x64:$CUDA_PATH/bin:$DAPHNE_ROOT/bin:$PATH
 
 # set bash as the default command if none is provided
+# /app/daphne-X86-64-v0.2-bin/bin/daphne 
 command=$*
 if [ "$#" -eq 0 ]; then
     command=bash
 fi
 
-$USE_SUDO docker run  -it --rm --hostname daphne-container \
-    -e GID=$GID -e TERM=screen-256color -e PATH \
+
+$USE_SUDO docker run  -it --hostname daphne-container \
+    -e GID=$GID -e TERM=screen-256color -e PATH --gpus all \
     -e USER=$USERNAME -e UID=$UID \
     -v /home/philipp.hildebrandt/daphnelib_umlaut_example:/app/daphnelib_umlaut_example \
     -v /home/philipp.hildebrandt/End-to-end-ML-System-Benchmark:/app/new_umlaut \

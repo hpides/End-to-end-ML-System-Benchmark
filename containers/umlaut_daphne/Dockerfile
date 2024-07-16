@@ -1,6 +1,7 @@
 FROM daphneeu/daphne-dev:latest_X86-64_BASE 
 
 WORKDIR /app
+# Auskommentieren als backup lösung
 RUN wget -qO- https://raw.githubusercontent.com/daphne-eu/daphne/main/KEYS.txt | gpg --import
 RUN wget https://github.com/daphne-eu/daphne/releases/download/0.2/daphne-X86-64-v0.2-bin.tgz.sha512sum
 RUN wget https://github.com/daphne-eu/daphne/releases/download/0.2/daphne-X86-64-v0.2-bin.tgz.asc
@@ -27,8 +28,15 @@ RUN pip install --upgrade -e End-to-end-ML-System-Benchmark/umlaut/
 RUN pip install "numpy>=1.20"
 RUN pip install "pandas==2.0.2"
 RUN pip install 'pygments<3.0.0,>=2.13.0'
-# python3 /app/daphnelib_umlaut_example/shift-and-scale.py
 
-WORKDIR /app/daphne-X86-64-v0.2-bin
+WORKDIR /app
+
+# FOR THE KAI PIPELINE
+RUN git clone https://github.com/daphne-eu/daphne.git
+WORKDIR /app/daphne
+RUN bash build.sh --clean --yes
+RUN bash build.sh --no-deps --installPrefix /usr/local
+RUN alias d='/app/daphne/bin/daphne'
+WORKDIR /app/
 
 ENTRYPOINT ["/bin/bash"]

@@ -119,8 +119,6 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
         self.measurements_lists = []
         self.linelabels = []
 
-        self.df.to_csv("/home/philipp.hildebrandt/End-to-end-ML-System-Benchmark/datadf.csv")
-
         for _, row in self.df.iterrows():
             measurement_dict = row['measurement_data']
             measurement_dict = json.loads(measurement_dict)

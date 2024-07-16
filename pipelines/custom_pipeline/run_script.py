@@ -52,7 +52,7 @@ def main():
         # Change the working directory to the script's directory if provided
         original_dir = os.getcwd()
         command_parts = command.split()
-        if command_parts[0] == "python" and len(command_parts) > 1:
+        if len(command_parts) > 1:
             script_path = command_parts[1]
             if os.path.isfile(script_path):
                 script_dir = os.path.dirname(os.path.abspath(script_path))
@@ -75,6 +75,8 @@ def main():
     bm.close()
 
     subprocess.run(["umlaut-cli", "custom_script.db", "-u", uuid, "-t"] + types + ["-d"] + types + ["-p", "plotly"])
+    # RUN MANUALLY
+    # umlaut-cli custom_script.db -u dd720caa-1e1a-4ff6-89aa-51f0fe0b73b0 -t memory gpumemory cpu gpu gpupower gputime time -d memory gpumemory cpu gpu gpupower gputime time -p plotly
 
 if __name__ == "__main__":
     main()

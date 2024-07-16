@@ -77,7 +77,7 @@ def prepare_windows(test_run_dir:str, number_of_labels:int, window_size:int)-> l
     
     return windows_list
 
-@umlaut.BenchmarkSupervisor(metrics, bm)
+@umlaut.BenchmarkSupervisor(metrics, bm, name="awsome cusom name")
 def make_metadata(base_dir:str, window_size:int, num_of_labels:int)-> list[tuple[str, str, float, int]]:
     """
     Runs prepare_windows over all files

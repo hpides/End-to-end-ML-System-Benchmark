@@ -37,6 +37,8 @@ to build a container and start it by running
 bash containers/umlaut_daphne/start.sh
 ```
 
+The Container contains a downloaded daphne binary and the newest version built from source.
+
 
 ## System Integration
 
@@ -87,7 +89,7 @@ if __name__ == "__main__":
 You can run your custom pipeline by providing the path to you python file. 
 You can specify the different kinds of measurements.
 ```
-python pipelines/custom_pipeline/run_script.py -s <your script> -g -gm -gt -gp -t -c -m
+python pipelines/custom_pipeline/run_script.py --cmd "your command" -g -gm -gt -gp -t -c -m
 ```
 
 ## Comand Line Interface
@@ -117,6 +119,9 @@ UMLAUT collects measurements of the following metrics:
 
 * Time spent
 * Memory usage
+* GPU Memory usage
+* GPU utilization
+* GPU power consumtion
 * Loss (single run and multiple runs)
 * Influence of batch size and #epochs
 * Influence of learning rate
@@ -179,6 +184,10 @@ By running the provided sh files, a set of operations (sleeping, sorting, matrix
   -cf / --cpufreq to specify the interval for cpu measurements\  
 -o / --order to specify which operations to run ("sleep", "sort", "mult", "vw", in any order and as often as desired)\
 -r / --repeat to specify how often the set of operations should be repeated
+-g / --gpu to activate gpu utilization measurement\
+-gm / --gpumemory to activate gpu memory measurement\
+-gt / --gputime to activate gpu time measurement. There might be slight differences between the cpu time and gpu time for code executed on a gpu.\
+-gp / --gpupower to activate gpu power consumption measurement.\
 
 Umlaut should have a memory overhead of ~130 MB, a CPU usage of 10-20% when idle and close to no time overhead.
 When sorting, memory usage should have a mean and max of within 1000-1100 MB.
