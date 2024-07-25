@@ -3,6 +3,7 @@ import os
 import argparse
 import umlaut
 import subprocess
+import psutil
 
 def main():
     parser = argparse.ArgumentParser(description="Umlaut benchmark configs",
@@ -64,10 +65,16 @@ def main():
         print(command)
         # Print the current directory
         print(f"Current directory: {os.getcwd()}")
-        subprocess.run(command.split(" "), timeout=600)
+        process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        pid = process.pid
+        for metric in metrics:
+            if hasattr(metric, "process"):
+                metric.process = psutil.Process(pid)
+                metric.timestamps = []
+                metric.measurements = []
+        
         os.chdir(original_dir)
- 
-    
+
     execute_command(config["command"])
 
     uuid = bm.uuid
