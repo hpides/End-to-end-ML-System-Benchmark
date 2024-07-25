@@ -65,13 +65,24 @@ def main():
         print(command)
         # Print the current directory
         print(f"Current directory: {os.getcwd()}")
-        process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+        process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        print("NEW PID", process.pid)
+
         pid = process.pid
         for metric in metrics:
             if hasattr(metric, "process"):
                 metric.process = psutil.Process(pid)
                 metric.timestamps = []
                 metric.measurements = []
+                print("switched")
+                
+        stdout, stderr = process.communicate()
+
+        # Print the subprocess output
+        if stdout:
+            print(stdout)
+        if stderr:
+            print(stderr)
         
         os.chdir(original_dir)
 

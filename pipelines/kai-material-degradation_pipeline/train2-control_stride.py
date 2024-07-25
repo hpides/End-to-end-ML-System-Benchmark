@@ -49,7 +49,7 @@ bm = umlaut.Benchmark('material-degradation.db', description="Benchmark KAI mate
 base_dir = "TP1/"
 # base_dir = r"../../data/processed/file_per_cycle_V1.3_quadratic_and_normalized/TP1"
 
-def prepare_windows(test_run_dir:str, number_of_labels:int, window_size:int)-> list[tuple[str, str, float, int]]:
+def prepare_windows(test_run_dir:str, number_of_labels:int, window_size:int):
     """
     Takes the path to the test run folder containing file per cycle, number of intended labels, and window size.
     returns a list of tuples of the start cycle and end cycle of each window, and the window label both for regression and classification
@@ -78,7 +78,7 @@ def prepare_windows(test_run_dir:str, number_of_labels:int, window_size:int)-> l
     return windows_list
 
 @umlaut.BenchmarkSupervisor(metrics, bm, name="awsome cusom name")
-def make_metadata(base_dir:str, window_size:int, num_of_labels:int)-> list[tuple[str, str, float, int]]:
+def make_metadata(base_dir:str, window_size:int, num_of_labels:int):
     """
     Runs prepare_windows over all files
     Takes the path to the base_dir with test run folders, window size, number of intended labels.

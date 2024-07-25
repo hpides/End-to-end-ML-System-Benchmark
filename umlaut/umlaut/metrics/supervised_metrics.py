@@ -216,9 +216,13 @@ class MemoryMetric(Metric):
 
     def meanwhile(self, finish_event):
         while not finish_event.isSet():
-            self.timestamps.append(datetime.now())
-            self.measurements.append(self.process.memory_info().rss / (2 ** 20))
-            time.sleep(self.interval)
+            try:
+                self.timestamps.append(datetime.now())
+                self.measurements.append(self.process.memory_info().rss / (2 ** 20))
+                time.sleep(self.interval)
+            except psutil.NoSuchProcess:
+                finish_event.set()
+                break
 
     def after(self):
         self.data = {
@@ -417,8 +421,12 @@ class CPUMetric(Metric):
 
     def meanwhile(self, finish_event):
         while not finish_event.isSet():
-            self.timestamps.append(datetime.now())
-            self.measurements.append(self.process.cpu_percent(interval=self.interval))
+            try:
+                self.measurements.append(self.process.cpu_percent(interval=self.interval))
+                self.timestamps.append(datetime.now())
+            except psutil.NoSuchProcess:
+                finish_event.set()
+                break
 
     def after(self):
         self.data = {
