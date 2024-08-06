@@ -4,12 +4,15 @@ import argparse
 import umlaut
 import subprocess
 import psutil
+import time
 
+        
 def main():
     parser = argparse.ArgumentParser(description="Umlaut benchmark configs",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
 
     parser.add_argument("-cmd", "--command", type=str, help="Command to execute", required=True)
+    parser.add_argument("-folder", "--execution_folder", type=str, help="Where to execute the command", required=True)
     parser.add_argument("-m", "--memory", action="store_true", help="activate memory measurement", default=False)
     parser.add_argument("-gm", "--gpumemory", action="store_true", help="activate gpu memory measurement", default=False)
     parser.add_argument("-gt", "--gputime", action="store_true", help="activate gpu time measurement", default=False)
@@ -49,25 +52,17 @@ def main():
     bm = umlaut.Benchmark('custom_script.db', description="Benchmark custom scripts.")
 
     @umlaut.BenchmarkSupervisor(metrics, bm)
-    def execute_command(command):
+    def execute_command(command, dir):
         # Change the working directory to the script's directory if provided
         original_dir = os.getcwd()
-        command_parts = command.split()
-        if len(command_parts) > 1:
-            script_path = command_parts[1]
-            if os.path.isfile(script_path):
-                script_dir = os.path.dirname(os.path.abspath(script_path))
-                os.chdir(script_dir)
-                # Modify the script path to be relative to the new working directory
-                command_parts[1] = os.path.basename(script_path)
-                command = " ".join(command_parts)
+        os.chdir(dir)
 
         print(command)
         # Print the current directory
         print(f"Current directory: {os.getcwd()}")
         process = subprocess.Popen(command.split(" "), stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
-        print("NEW PID", process.pid)
-
+        
+    
         pid = process.pid
         for metric in metrics:
             if hasattr(metric, "process"):
@@ -86,7 +81,7 @@ def main():
         
         os.chdir(original_dir)
 
-    execute_command(config["command"])
+    execute_command(config["command"], config["execution_folder"])
 
     uuid = bm.uuid
     print("UUID", uuid)
@@ -94,7 +89,7 @@ def main():
 
     subprocess.run(["umlaut-cli", "custom_script.db", "-u", uuid, "-t"] + types + ["-d"] + types + ["-p", "plotly"])
     # RUN MANUALLY
-    # umlaut-cli custom_script.db -u dd720caa-1e1a-4ff6-89aa-51f0fe0b73b0 -t memory gpumemory cpu gpu gpupower gputime time -d memory gpumemory cpu gpu gpupower gputime time -p plotly
+    # umlaut-cli custom_script.db -u 294e313b-ef34-41a1-be82-6e6784fb88d7 -t memory gpumemory cpu gpu gpupower gputime time -d memory gpumemory cpu gpu gpupower gputime time -p plotly
 
 if __name__ == "__main__":
     main()

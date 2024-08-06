@@ -430,8 +430,8 @@ class CPUMetric(Metric):
 
     def after(self):
         self.data = {
-            'timestamps': self.timestamps,
-            'measurements': self.measurements
+            'timestamps': self.timestamps[2:],
+            'measurements': self.measurements[2:]
         }
 
     def log(self, benchmark, decorated_method_name):

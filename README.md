@@ -39,7 +39,6 @@ bash containers/umlaut_daphne/start.sh
 
 The Container contains a downloaded daphne binary and the newest version built from source.
 
-
 ## System Integration
 
 Upon installation, UMLAUT can be imported in any Python pipeline. The complete example pipeline can be found in [./pipelines/github_example/main.py](./pipelines/github_example/main.py).
@@ -84,12 +83,12 @@ if __name__ == "__main__":
     main()
 ```
 
-## Running you Scripts with umlaut
+## Running your Scripts with umlaut
 
 You can run your custom pipeline by providing the path to you python file. 
 You can specify the different kinds of measurements.
 ```
-python pipelines/custom_pipeline/run_script.py --cmd "your command" -g -gm -gt -gp -t -c -m
+python pipelines/custom_pipeline/run_script.py --cmd "your command" -folder "path/to/your/script" -g -gm -gt -gp -t -c -m
 ```
 
 ## Comand Line Interface
