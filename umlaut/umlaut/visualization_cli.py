@@ -43,18 +43,20 @@ def get_args():
     parser.add_argument("-u", "--uuids", nargs="+", help=uuid_help, required=False)
     parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
-    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly"], default="matplotlib", help=plotting_backend_help)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly", "text"], default="plotly", help=plotting_backend_help)
     
     return parser.parse_args()
- 
+
+
 def filter_by_args(meas_df, meta_df, args):
+
     if args.uuids is not  None:
         meas_df = meas_df[meas_df['uuid'].isin(args.uuids)]
         meta_df = meta_df[meta_df.index.isin(args.uuids)]
     if args.types is not None:
-        meas_df = meas_df[meas_df['measurement_type'].isin([args.types])]
+        meas_df = meas_df[meas_df['measurement_type'].isin(args.types)]
     if args.descriptions is not None:
-        meas_df = meas_df[meas_df['measurement_description'].isin([args.descriptions])]
+        meas_df = meas_df[meas_df['measurement_description'].isin(args.descriptions)]
 
     if meas_df.empty:
         raise Exception("There are no database entries with the given uuids, types and descriptions.")
@@ -147,11 +149,11 @@ def main():
         visualizer = VisualizerClass(type_group_df, args.plotting_backend)
         figs.append(visualizer.plot())
 
-    figs = list(chain(*figs))
-
     if args.plotting_backend == 'matplotlib':
+        figs = list(chain(*figs))
         plt.show()
     if args.plotting_backend == 'plotly':
+        figs = list(chain(*figs))
         for fig in figs:
             fig.show()
 

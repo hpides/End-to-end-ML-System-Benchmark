@@ -15,6 +15,7 @@ class Measurement(Base):
     #measurement_data = Column(LargeBinary, nullable=False)
     measurement_data = Column(JSON)
     measurement_unit = Column(String)
+    measured_method_name = Column(String)
 
 
 class BenchmarkMetadata(Base):

@@ -22,6 +22,65 @@ Or, through **pip**:
 pip install -e <PATH_TO_REPOSITORY>/umlaut/
 ```
 
+### Docker setup
+Alternatively you can run umlaut or umplaut + daphne in a docker container. 
+You can find them in /containers.
+
+<details>
+<summary>Only Umlaut</summary>
+<br>
+Run
+
+```
+sudo docker build -t umlaut containers/only_umlaut
+```
+
+to build a container and start it by running
+
+```
+bash containers/only_umlaut/start.sh
+```
+
+The Container only installs this repository.
+</details>
+
+<details>
+<summary>Umlaut + Daphne</summary>
+<br>
+Run
+
+```
+sudo docker build -t umlaut_cpu containers/umlaut_daphne
+```
+
+to build a container and start it by running
+
+```
+bash containers/umlaut_daphne/start.sh
+```
+
+The Container builds the newest daphne version from source. This might take a while.
+You can alternatively uncomment the lines from the Dockerfile to download a daphne binary.
+</details>
+
+<details>
+<summary>Umlaut + Daphne + CUDA</summary>
+<br>
+Run
+
+```
+sudo docker build -t umlaut_cuda containers/umlaut_daphne_cuda
+```
+
+to build a container and start it by running
+
+```
+bash containers/umlaut_daphne_cuda/start.sh
+```
+
+The Container contains builds the dnn-ops branch from daphne.
+</details>
+
 
 
 ## System Integration
@@ -68,6 +127,14 @@ if __name__ == "__main__":
     main()
 ```
 
+## End-to-End benchmarking with UMLAUT
+
+You can run your custom pipeline by providing the path to you python file. 
+You can specify the different kinds of measurements.
+```
+python pipelines/custom_pipeline/run_script.py --cmd "your command" -folder "path/to/your/script" -g -gm -gt -gp -t -c -m
+```
+
 ## Comand Line Interface
 
 Measurements are accessed through UMLAUT's CLI tool. It can be invoked from a *bash* terminal with the following command.
@@ -95,6 +162,9 @@ UMLAUT collects measurements of the following metrics:
 
 * Time spent
 * Memory usage
+* GPU Memory usage
+* GPU utilization
+* GPU power consumtion
 * Loss (single run and multiple runs)
 * Influence of batch size and #epochs
 * Influence of learning rate
@@ -113,31 +183,48 @@ To reproduce the following plots, use the *[./github_example/hello_word.db](./pi
 
 ### Selecting single pipeline to visualize
 
-<img src="plots/umlaut_cli_single_pipeline_1.png" alt="Selecting single pipeline to visualize" width="auto" height="auto" />
+```
+umlaut-cli hello_world.db -p plotly
+```
+
+Run umlaut-cli and use plotly as plotting backend.
+
+<img src="plots/CLI_TUTORIAL_select_uuid.png" alt="Selecting single pipeline to visualize" width="auto" height="auto" />
+
+Select an UUID using space and the arrow keys.
 
 ### Selecting measurements for a single pipeline
 
-![Selecting measurements for a single pipeline](plots/umlaut_cli_single_pipeline_2.png)
+![Selecting measurements for a single pipeline](plots/CLI_TUTORIAL_select_measurement.png)
+
+Select one or more metrics using space and the arrow keys.
+
+### Select one or more methods
+
+![Selecting measurements for a single pipeline](plots/CLI_TUTORIAL_select_method.png)
+
+Select one or more descriptions using space and the arrow keys. The description or a measurement is usually the method name.
 
 ### Results for CPU and Memory Usage [single pipeline]  
 
-<img src="plots/cpu_single_pipeline.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="400" />
+<img src="plots/CLI_TUTORIAL_cpu_results.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="300" />
 
-<img src="plots/memory_single_pipeline.png" alt="Results for Memory Usage [single pipeline]" width="auto" height="400" />  
+<img src="plots/CLI_TUTORIAL_memory_results.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="300" />
 
-### Selecting multiple pipelines to visualize   
-
-![Selecting multiple pipelines to visualize](plots/umlaut_cli_3pipelines_1.png)  
 
 ### Selecting measurements for multiple pipelines
 
-![Selecting measurements for multiple pipelines](plots/umlaut_cli_3pipelines_2.png)  
+```
+umlaut-cli hello_world.db -p plotly
+```
 
-### Results for CPU and Power Usage [multiple pipelines]  
+We run again umlaut-cli and use plotly as plotting backend. This time we select mutiple UUIDs using space and the arrow keys.
 
-<img src="plots/cpu_3pipelines.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="400" />
+![Selecting measurements for multiple pipelines](plots/CLI_TUTORIAL_select_multiple_uuids.png)  
 
-<img src="plots/power_3pipeline_runs.png" alt="Results for Power Usage [multiple pipelines]" width="auto" height="400" />  
+
+<img src="plots/CLI_TUTORIAL_multiple_cpu_results.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="300" />
+ 
 
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 
@@ -146,6 +233,25 @@ In the *pipelines* folder, there are several examples of the following pipelines
 * Backblaze Hard Drive Anomaly Prediction [[description]](https://www.backblaze.com/b2/hard-drive-test-data.html) [[umlaut pipeline]](./pipelines/backblaze_pipeline)
 * Stock Market Prediction [[description]](https://towardsdatascience.com/lstm-time-series-forecasting-predicting-stock-prices-using-an-lstm-model-6223e9644a2f) [[umlaut pipeline]](./pipelines/stock_market_pipeline)
 * MNIST Digit Recognition [[description]](https://github.com/rahulagg999/MNIST-Digit-Recognizer/blob/master/MNIST.ipynb) [[umlaut pipeline]](./pipelines/MNIST_pipeline)
+
+* Meta Benchmarking Pipeline for initial testing:\
+By running the provided sh files, a set of operations (sleeping, sorting, matrix multiplication) can be run to test Umlaut on your own system. Furthermore the provided python file can be run for customized testing with the following arguments:
+
+-t / --time to activate runtime measurements\
+-m / --memory to activate memory measurements\
+  -mf / --memoryfreq to specify the interval for memory measurements\
+-c / --cpu to activate cpu measurements\
+  -cf / --cpufreq to specify the interval for cpu measurements\  
+-o / --order to specify which operations to run ("sleep", "sort", "mult", "vw", in any order and as often as desired)\
+-r / --repeat to specify how often the set of operations should be repeated
+-g / --gpu to activate gpu utilization measurement\
+-gm / --gpumemory to activate gpu memory measurement\
+-gt / --gputime to activate gpu time measurement. There might be slight differences between the cpu time and gpu time for code executed on a gpu.\
+-gp / --gpupower to activate gpu power consumption measurement.\
+
+Umlaut should have a memory overhead of ~130 MB, a CPU usage of 10-20% when idle and close to no time overhead.
+When sorting, memory usage should have a mean and max of within 1000-1100 MB.
+When matrix multiplying, CPU usage should have a mean of ~90%.
 
 ## Documentation
 * https://hpides.github.io/End-to-end-ML-System-Benchmark/

@@ -12,7 +12,8 @@ import numpy as np
 import psutil
 import pyRAPL
 import json
-
+from torch import cuda
+from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlShutdown, nvmlDeviceGetUtilizationRates, nvmlDeviceGetPowerUsage
 
 class BenchmarkSupervisor:
     """A supervisor object managing all supervised metrics
@@ -26,12 +27,15 @@ class BenchmarkSupervisor:
     benchmark: Benchmark
         The central benchmark object used in the pipeline
     """
-    def __init__(self, metrics, benchmark):
+    def __init__(self, metrics, benchmark, name=None):
         self.metrics = sorted(metrics)
         self.benchmark = benchmark
+        self.method_name = name
 
     def __call__(self, func):
         def inner(*args, **kwargs):
+            if self.method_name is None:
+                self.method_name = func.__name__
             finish_event = threading.Event()
             with ThreadPoolExecutor(max_workers=len(self.metrics)) as tpe:
                 try:
@@ -67,7 +71,7 @@ class BenchmarkSupervisor:
 
     def __log(self):
         for metric in self.metrics:
-            metric.log(self.benchmark)
+            metric.log(self.benchmark, self.method_name)
 
 
 class Metric:
@@ -94,7 +98,7 @@ class Metric:
         return self.data
         #return pickle.dumps(self.data)
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         pass
 
 
@@ -117,9 +121,75 @@ class TimeMetric(Metric):
         after_time = time.perf_counter()
         self.data = after_time - self.before_time
 
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec')
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
 
+class GPUTimeMetric(Metric):
+    """The metric object to measure the time taken for GPU execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    """
+    priority = 0
+    measure_type = 'gputime'
+    needs_threading = False
+
+    def before(self):
+        self.start_event = cuda.Event(enable_timing=True)
+        self.end_event = cuda.Event(enable_timing=True)
+        self.start_event.record()
+
+    def after(self):
+        self.end_event.record()
+        cuda.synchronize()
+        elapsed_time = self.start_event.elapsed_time(self.end_event)  # Time in milliseconds
+        self.data = elapsed_time / 1000.0  # Convert to seconds
+
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
+
+class GPUMemoryMetric(Metric):
+    """The metric object to measure GPU memory used in the execution
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between memory measurements
+    """
+    priority = 3
+    measure_type = 'gpumemory'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
+        self.interval = interval
+
+    def before(self):
+        nvmlInit()
+        self.handle = nvmlDeviceGetHandleByIndex(0)
+        self.timestamps = []
+        self.measurements = []
+
+    def meanwhile(self, finish_event):
+        while not finish_event.isSet():
+            self.timestamps.append(datetime.now())
+            self.measurements.append(nvmlDeviceGetMemoryInfo(self.handle).used / (2 ** 20))
+            time.sleep(self.interval)
+
+    def after(self):
+        nvmlShutdown()
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+
+    def log(self, benchmark, decorated_method_name):
+        json_data = json.dumps(self.serialize(), indent=4, default=str)
+        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
 
 class MemoryMetric(Metric):
     """The metric object to measure memory used in the execution
@@ -146,9 +216,13 @@ class MemoryMetric(Metric):
 
     def meanwhile(self, finish_event):
         while not finish_event.isSet():
-            self.timestamps.append(datetime.now())
-            self.measurements.append(self.process.memory_info().rss / (2 ** 20))
-            time.sleep(self.interval)
+            try:
+                self.timestamps.append(datetime.now())
+                self.measurements.append(self.process.memory_info().rss / (2 ** 20))
+                time.sleep(self.interval)
+            except psutil.NoSuchProcess:
+                finish_event.set()
+                break
 
     def after(self):
         self.data = {
@@ -156,10 +230,9 @@ class MemoryMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="MiB")
-
+        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
         
 class EnergyMetric(Metric):
     """The metric object to measure energy used in the execution
@@ -191,11 +264,10 @@ class EnergyMetric(Metric):
             self.meter.end()
             self.data = sum(self.meter.result.pkg)
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='µJ')
-
+            benchmark.log(self.description, self.measure_type, json_data, unit='µJ', method_name=decorated_method_name)
 
 class PowerMetric(Metric):
     """The metric object to measure power used in the execution
@@ -249,11 +321,10 @@ class PowerMetric(Metric):
                 'interval' : self.interval
             }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='Watt')
-
+            benchmark.log(self.description, self.measure_type, json_data, unit='Watt', method_name=decorated_method_name)
 
 class LatencyMetric(Metric):
     """The metric object to measure latency of the pipeline function
@@ -288,9 +359,8 @@ class LatencyMetric(Metric):
         """
         self.num_entries = num_entries
 
-    def log(self, benchmark):
-        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry')
-
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry', method_name=decorated_method_name)
 
 class ThroughputMetric(Metric):
     """The metric object to measure throughput of the pipeline function
@@ -323,9 +393,8 @@ class ThroughputMetric(Metric):
         """
         self.num_entries = num_entries
 
-    def log(self, benchmark):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second')
-
+    def log(self, benchmark, decorated_method_name):
+        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second', method_name=decorated_method_name)
 
 class CPUMetric(Metric):
     """The metric object to measure CPU usage of the running Python instance in percent
@@ -352,15 +421,104 @@ class CPUMetric(Metric):
 
     def meanwhile(self, finish_event):
         while not finish_event.isSet():
-            self.timestamps.append(datetime.now())
-            self.measurements.append(self.process.cpu_percent(interval=self.interval))
+            try:
+                self.measurements.append(self.process.cpu_percent(interval=self.interval))
+                self.timestamps.append(datetime.now())
+            except psutil.NoSuchProcess:
+                finish_event.set()
+                break
 
     def after(self):
+        self.data = {
+            'timestamps': self.timestamps[2:],
+            'measurements': self.measurements[2:]
+        }
+
+    def log(self, benchmark, decorated_method_name):
+        json_data = json.dumps(self.serialize(), indent=4, default=str)
+        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
+
+class GPUMetric(Metric):
+    """The metric object to measure GPU usage of the running instance in percent
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between GPU usage measurements
+    """
+    priority = 1
+    measure_type = 'gpu'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
+        self.interval = interval
+
+    def before(self):
+        nvmlInit()
+        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.timestamps = []
+        self.measurements = []
+
+    def meanwhile(self, finish_event):
+        while not finish_event.isSet():
+            self.timestamps.append(datetime.now())
+            utilization = nvmlDeviceGetUtilizationRates(self.handle)
+            self.measurements.append(utilization.gpu)
+            finish_event.wait(self.interval)  # This is better for clean exit
+
+    def after(self):
+        nvmlShutdown()
         self.data = {
             'timestamps': self.timestamps,
             'measurements': self.measurements
         }
 
-    def log(self, benchmark):
+    def log(self, benchmark, decorated_method_name):
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="%")
+        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
+
+class GPUPowerMetric(Metric):
+    """The metric object to measure GPU power usage of the running instance in watts
+
+    Parameters
+    ----------
+    description: str
+        The description of this metric and function which is added to the database
+    interval: int, default=1
+        The number of seconds between GPU power measurements
+    """
+    priority = 1
+    measure_type = 'gpupower'
+    needs_threading = True
+
+    def __init__(self, description, interval=1):
+        super().__init__(description)
+        self.interval = interval
+
+    def before(self):
+        nvmlInit()
+        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.timestamps = []
+        self.measurements = []
+
+    def meanwhile(self, finish_event):
+        while not finish_event.isSet():
+            self.timestamps.append(datetime.now())
+            power_usage = nvmlDeviceGetPowerUsage(self.handle) / 1000.0  # Convert from milliwatts to watts
+            self.measurements.append(power_usage)
+            finish_event.wait(self.interval)  # This is better for clean exit
+
+    def after(self):
+        nvmlShutdown()
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+
+    def log(self, benchmark, decorated_method_name):
+        json_data = json.dumps(self.serialize(), indent=4, default=str)
+        benchmark.log(self.description, self.measure_type, json_data, unit="W", method_name=decorated_method_name)
+
