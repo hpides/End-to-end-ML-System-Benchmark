@@ -2,8 +2,8 @@ import torch
 
 print("Matrix Multiplying")
 # Create random matrices and move them to the GPU
-a = torch.rand((20000, 20000), device='cuda')
-b = torch.rand((20000, 20000), device='cuda')
+a = torch.rand((20000, 20000), device='cpu')
+b = torch.rand((20000, 20000), device='cpu')
 
 # Perform matrix multiplication on the GPU
 ab = torch.matmul(a, b)

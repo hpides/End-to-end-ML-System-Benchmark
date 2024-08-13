@@ -88,8 +88,6 @@ def main():
     bm.close()
 
     subprocess.run(["umlaut-cli", "custom_script.db", "-u", uuid, "-t"] + types + ["-d"] + types + ["-p", "plotly"])
-    # RUN MANUALLY
-    # umlaut-cli custom_script.db -u 294e313b-ef34-41a1-be82-6e6784fb88d7 -t memory gpumemory cpu gpu gpupower gputime time -d memory gpumemory cpu gpu gpupower gputime time -p plotly
 
 if __name__ == "__main__":
     main()

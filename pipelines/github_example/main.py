@@ -2,7 +2,7 @@ import time
 import numpy as np
 from umlaut import Benchmark, BenchmarkSupervisor, MemoryMetric, CPUMetric
 
-bm = Benchmark('sample_db_file.db', description="Database for the Github sample measurements")
+bm = Benchmark('hello_world.db', description="Database for the Github sample measurements")
 
 bloat_metrics = {
     "memory": MemoryMetric('bloat memory', interval=0.1),

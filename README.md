@@ -26,9 +26,31 @@ pip install -e <PATH_TO_REPOSITORY>/umlaut/
 Alternatively you can run umlaut or umplaut + daphne in a docker container. 
 You can find them in /containers.
 
+<details>
+<summary>Only Umlaut</summary>
+<br>
 Run
+
 ```
-sudo docker build -t umlaut containers/umlaut_daphne
+sudo docker build -t umlaut containers/only_umlaut
+```
+
+to build a container and start it by running
+
+```
+bash containers/only_umlaut/start.sh
+```
+
+The Container only installs this repository.
+</details>
+
+<details>
+<summary>Umlaut + Daphne</summary>
+<br>
+Run
+
+```
+sudo docker build -t umlaut_cpu containers/umlaut_daphne
 ```
 
 to build a container and start it by running
@@ -37,7 +59,29 @@ to build a container and start it by running
 bash containers/umlaut_daphne/start.sh
 ```
 
-The Container contains a downloaded daphne binary and the newest version built from source.
+The Container builds the newest daphne version from source. This might take a while.
+You can alternatively uncomment the lines from the Dockerfile to download a daphne binary.
+</details>
+
+<details>
+<summary>Umlaut + Daphne + CUDA</summary>
+<br>
+Run
+
+```
+sudo docker build -t umlaut_cuda containers/umlaut_daphne_cuda
+```
+
+to build a container and start it by running
+
+```
+bash containers/umlaut_daphne_cuda/start.sh
+```
+
+The Container contains builds the dnn-ops branch from daphne.
+</details>
+
+
 
 ## System Integration
 
@@ -83,7 +127,7 @@ if __name__ == "__main__":
     main()
 ```
 
-## Running your Scripts with umlaut
+## End-to-End benchmarking with UMLAUT
 
 You can run your custom pipeline by providing the path to you python file. 
 You can specify the different kinds of measurements.
@@ -139,31 +183,48 @@ To reproduce the following plots, use the *[./github_example/hello_word.db](./pi
 
 ### Selecting single pipeline to visualize
 
-<img src="plots/umlaut_cli_single_pipeline_1.png" alt="Selecting single pipeline to visualize" width="auto" height="auto" />
+```
+umlaut-cli hello_world.db -p plotly
+```
+
+Run umlaut-cli and use plotly as plotting backend.
+
+<img src="plots/CLI_TUTORIAL_select_uuid.png" alt="Selecting single pipeline to visualize" width="auto" height="auto" />
+
+Select an UUID using space and the arrow keys.
 
 ### Selecting measurements for a single pipeline
 
-![Selecting measurements for a single pipeline](plots/umlaut_cli_single_pipeline_2.png)
+![Selecting measurements for a single pipeline](plots/CLI_TUTORIAL_select_measurement.png)
+
+Select one or more metrics using space and the arrow keys.
+
+### Select one or more methods
+
+![Selecting measurements for a single pipeline](plots/CLI_TUTORIAL_select_method.png)
+
+Select one or more descriptions using space and the arrow keys. The description or a measurement is usually the method name.
 
 ### Results for CPU and Memory Usage [single pipeline]  
 
-<img src="plots/cpu_single_pipeline.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="400" />
+<img src="plots/CLI_TUTORIAL_cpu_results.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="300" />
 
-<img src="plots/memory_single_pipeline.png" alt="Results for Memory Usage [single pipeline]" width="auto" height="400" />  
+<img src="plots/CLI_TUTORIAL_memory_results.png" alt="Results for CPU Usage [single pipeline]" width="auto" height="300" />
 
-### Selecting multiple pipelines to visualize   
-
-![Selecting multiple pipelines to visualize](plots/umlaut_cli_3pipelines_1.png)  
 
 ### Selecting measurements for multiple pipelines
 
-![Selecting measurements for multiple pipelines](plots/umlaut_cli_3pipelines_2.png)  
+```
+umlaut-cli hello_world.db -p plotly
+```
 
-### Results for CPU and Power Usage [multiple pipelines]  
+We run again umlaut-cli and use plotly as plotting backend. This time we select mutiple UUIDs using space and the arrow keys.
 
-<img src="plots/cpu_3pipelines.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="400" />
+![Selecting measurements for multiple pipelines](plots/CLI_TUTORIAL_select_multiple_uuids.png)  
 
-<img src="plots/power_3pipeline_runs.png" alt="Results for Power Usage [multiple pipelines]" width="auto" height="400" />  
+
+<img src="plots/CLI_TUTORIAL_multiple_cpu_results.png" alt="Results for CPU Usage [multiple pipelines]" width="auto" height="300" />
+ 
 
 ## Example Pipelines
 In the *pipelines* folder, there are several examples of the following pipelines where UMLAUT is integrated. 

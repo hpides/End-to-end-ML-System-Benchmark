@@ -44,4 +44,4 @@ $USE_SUDO docker run  -it --hostname daphne-container \
     -e GID=$GID -e TERM=screen-256color -e PATH --gpus all \
     -e USER=$USERNAME -e UID=$UID \
     -v .:/app/umlaut \
-    --entrypoint /bin/bash "umlaut_cpu" 
+    --entrypoint /bin/bash "umlaut_cuda" 
