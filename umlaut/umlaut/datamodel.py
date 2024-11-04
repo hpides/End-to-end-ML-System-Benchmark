@@ -22,4 +22,5 @@ class BenchmarkMetadata(Base):
     __tablename__ = 'benchmark_metadata'
     uuid = Column(String, primary_key=True)
     meta_description = Column(String)
+    meta_name = Column(String)
     meta_start_time = Column(DateTime)

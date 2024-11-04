@@ -164,13 +164,14 @@ class GPUMemoryMetric(Metric):
     measure_type = 'gpumemory'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0):
         super().__init__(description)
         self.interval = interval
+        self.id = id
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)
         self.timestamps = []
         self.measurements = []
 
@@ -452,13 +453,14 @@ class GPUMetric(Metric):
     measure_type = 'gpu'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0):
         super().__init__(description)
         self.interval = interval
+        self.id = id
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)  # You may want to parameterize the GPU index
         self.timestamps = []
         self.measurements = []
 
@@ -494,13 +496,14 @@ class GPUPowerMetric(Metric):
     measure_type = 'gpupower'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0):
         super().__init__(description)
         self.interval = interval
+        self.id = id
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)  # You may want to parameterize the GPU index
         self.timestamps = []
         self.measurements = []
 
