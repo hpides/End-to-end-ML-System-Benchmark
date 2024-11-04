@@ -11,6 +11,24 @@ from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
 
 from .datamodel import Base, Measurement, BenchmarkMetadata
+import inspect
+
+# Util for the benchmark name
+def get_outermost_filename():
+    current_frame = inspect.currentframe()
+    
+    # Traverse to the outermost frame
+    outermost_frame = current_frame
+    while current_frame:
+        outermost_frame = current_frame
+        current_frame = current_frame.f_back
+    
+    # Get the file name of the outermost frame
+    filename = outermost_frame.f_globals.get("__file__", None)
+    
+    if filename:
+        return os.path.basename(filename)
+    return ""
 
 class Benchmark:
     """A class that manages the database entries for the measured metrics which are logged into the database.
@@ -23,6 +41,8 @@ class Benchmark:
         The description of the whole pipeline use case. Even though the description is optional, it should be set
         so the database entries are distinguishable without evaluating the uuid's.
         This parameter is ignored for Benchmark objects initialized in mode 'r'.
+    name : str, optional
+        The name of the current pipeline run. It is the file name by default.
     mode : str, default='a'
         One of ['w', 'a', 'r']. The mode corresponds to conventional python file handling modes.
         Modes 'a' and 'w' are used for storing metrics in a database during a pipeline run
@@ -36,13 +56,16 @@ class Benchmark:
         mode of the Benchmark object. One of ['w', 'a', 'r'].
     description : str
         description of the pipeline run. Not relevant if mode is 'r'.
+    name : str
+        name of the current pipeline run.
     session : sqlalchemy.orm.session.Session
         SQLalchemy session
     """
 
-    def __init__(self, db_file, description="", mode="a"):
+    def __init__(self, db_file, description="", mode="a", name=""):
         self.db_file = db_file
         self.description = description
+        self.name = name if name != "" else get_outermost_filename()
         self.mode = mode
 
         if mode == 'r':
@@ -97,6 +120,7 @@ class Benchmark:
         session = Session()
         session.add(BenchmarkMetadata(uuid=self.uuid,
                                       meta_description=self.description,
+                                      meta_name=self.name,
                                       meta_start_time=datetime.now()))
         session.commit()
 
@@ -137,6 +161,7 @@ class VisualizationBenchmark(Benchmark):
         """
         query = self.query(BenchmarkMetadata.uuid,
                            BenchmarkMetadata.meta_description,
+                           BenchmarkMetadata.meta_name,
                            BenchmarkMetadata.meta_start_time)
         col_names = [col_desc['name'] for col_desc in query.column_descriptions]
 
@@ -173,7 +198,8 @@ class VisualizationBenchmark(Benchmark):
         """
         meta_query = self.query(BenchmarkMetadata.uuid,
                                 BenchmarkMetadata.meta_start_time,
-                                BenchmarkMetadata.meta_description).filter(
+                                BenchmarkMetadata.meta_description,
+                                BenchmarkMetadata.meta_name).filter(
                                     BenchmarkMetadata.uuid.in_(uuid_type_desc_df['uuid']))
         meta_col_names = [col_desc['name'] for col_desc in meta_query.column_descriptions]
         meta_df = pd.DataFrame(meta_query.all(), columns=meta_col_names)

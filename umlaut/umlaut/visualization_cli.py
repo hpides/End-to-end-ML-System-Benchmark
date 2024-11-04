@@ -65,10 +65,7 @@ def filter_by_args(meas_df, meta_df, args):
 
 def prompt_for_uuid(meas_df, meta_df):
     prompt_choices = [
-            {'name' : 
-                f"{uuid}" +
-                f", {str(db_entry['meta_start_time'])}" +
-                f"{', description: ' + db_entry['meta_description'] if db_entry['meta_description'] else ''}",
+            {'name' : f"{str(db_entry['meta_name'])} from {str(db_entry['meta_start_time'])}. Description: {str(db_entry['meta_description'])}. UUID: {uuid}",
              'value': uuid}
             for uuid, db_entry in meta_df.iterrows()
     ]
