@@ -62,11 +62,12 @@ class Benchmark:
         SQLalchemy session
     """
 
-    def __init__(self, db_file, description="", mode="a", name=""):
+    def __init__(self, db_file, description="", mode="a", name="", use_database_thread=False):
         self.db_file = db_file
         self.description = description
         self.name = name if name != "" else get_outermost_filename()
         self.mode = mode
+        self.use_database_thread = use_database_thread
 
         if mode == 'r':
             if not os.path.exists(self.db_file):
@@ -85,8 +86,9 @@ class Benchmark:
             self.uuid = str(uuid4())
             self.queue = Queue()
 
-            self._db_thread = Thread(target=self._database_thread_func)
-            self._db_thread.start()
+            if self.use_database_thread:
+                self._db_thread = Thread(target=self._database_thread_func)
+                self._db_thread.start()
 
     def query(self, *args, **kwargs):
         """
@@ -106,11 +108,33 @@ class Benchmark:
         For Benchmark objects used in mode 'r', the SQLalchemy session is closed.
         For the remaining modes the session is closed and all collected metrics are written to the database file.        
         """
+
         if self.mode == 'r':
             self.session.close()
-        else:
+        elif self.use_database_thread:
             self.close_event.set()
             self._db_thread.join()
+        else:
+            engine = create_engine('sqlite+pysqlite:///' + self.db_file)
+            Base.metadata.create_all(engine)
+            Session = sessionmaker(bind=engine)
+            session = Session()
+            session.add(BenchmarkMetadata(uuid=self.uuid,
+                                        meta_description=self.description,
+                                        meta_name=self.name,
+                                        meta_start_time=datetime.now()))
+            session.commit()
+
+            try:
+                while not self.queue.empty():
+                    measurement = self.queue.get()
+                    session.add(measurement)
+                    log_staged = True
+                    
+                session.commit()
+            finally:
+                session.close()
+            
 
     def _database_thread_func(self):
         """The function that manages the threading."""
