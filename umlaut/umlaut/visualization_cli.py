@@ -43,7 +43,7 @@ def get_args():
     parser.add_argument("-u", "--uuids", nargs="+", help=uuid_help, required=False)
     parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
-    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly", "text"], default="plotly", help=plotting_backend_help)
+    parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly", "text", "csv"], default="plotly", help=plotting_backend_help)
     
     return parser.parse_args()
 
