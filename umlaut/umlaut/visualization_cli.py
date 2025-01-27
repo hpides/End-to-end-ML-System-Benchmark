@@ -36,6 +36,7 @@ def get_args():
                        "They help giving descriptive information about captured metrics. " + \
                        "This parameter is optional and can be choosen via prompt later."
     plotting_backend_help = "Plotting backend used for visualization. The default is matplotlib."
+    tmp_dir_help = "Path to a temporary directory to store the database file. Optional"
 
 
     parser = argparse.ArgumentParser(description=module_help)
@@ -44,6 +45,7 @@ def get_args():
     parser.add_argument("-t", "--types", nargs="+", help=type_help, required=False)
     parser.add_argument("-d", "--descriptions", nargs="+", help=description_help, required=False)
     parser.add_argument("-p", "--plotting-backend", choices=["matplotlib", "plotly", "text", "csv"], default="plotly", help=plotting_backend_help)
+    parser.add_argument("-tmp", "--tmp-dir", help=tmp_dir_help, required=False)
     
     return parser.parse_args()
 
@@ -125,7 +127,9 @@ def prompt_for_description(meas_df):
 
 def main():
     args = get_args()
-    benchmark = VisualizationBenchmark(args.file)
+    benchmark = VisualizationBenchmark(args.file, tmp_dir=args.tmp_dir)
+    if args.tmp_dir is not None:
+        benchmark.write_checkpoints()
     meas_df = benchmark.query_all_uuid_type_desc()
     meta_df = benchmark.query_all_meta()
     meas_df, meta_df = filter_by_args(meas_df, meta_df, args)
@@ -138,6 +142,7 @@ def main():
         meas_df = prompt_for_description(meas_df)
     
     df = benchmark.join_visualization_queries(meas_df)
+    df.to_csv("test.csv")
     
     figs = []
 

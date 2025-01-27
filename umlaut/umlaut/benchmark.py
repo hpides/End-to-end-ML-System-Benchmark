@@ -1,11 +1,12 @@
 from datetime import datetime
 import os
+import shutil
 import pickle
 from queue import Queue
 from threading import Thread, Event
 from time import sleep
 from uuid import uuid4
-
+import json
 import pandas as pd
 from sqlalchemy import create_engine
 from sqlalchemy.orm import sessionmaker
@@ -62,12 +63,18 @@ class Benchmark:
         SQLalchemy session
     """
 
-    def __init__(self, db_file, description="", mode="a", name="", use_database_thread=False):
+    def __init__(self, db_file, description="", mode="a", name="", checkpoint_frequency=2, tmp_dir="umlaut_tmp"):
         self.db_file = db_file
         self.description = description
         self.name = name if name != "" else get_outermost_filename()
         self.mode = mode
-        self.use_database_thread = use_database_thread
+        self.checkpoint_frequency = checkpoint_frequency
+        self.log_idx = 0
+        self.tmp_dir = tmp_dir
+        
+        # Ensure temporary directory exists
+        if not os.path.exists(self.tmp_dir):
+            os.makedirs(self.tmp_dir)
 
         if mode == 'r':
             if not os.path.exists(self.db_file):
@@ -85,10 +92,20 @@ class Benchmark:
             self.close_event = Event()
             self.uuid = str(uuid4())
             self.queue = Queue()
-
-            if self.use_database_thread:
-                self._db_thread = Thread(target=self._database_thread_func)
-                self._db_thread.start()
+            
+            engine = create_engine('sqlite+pysqlite:///' + self.db_file)
+            Base.metadata.create_all(engine)
+            Session = sessionmaker(bind=engine)
+            self.session = Session()
+            # self.session.add(BenchmarkMetadata(uuid=self.uuid,
+            #                             meta_description=self.description,
+            #                             meta_name=self.name,
+            #                             meta_start_time=datetime.now()))
+            # self.session.commit()
+            temp_file_path = os.path.join(self.tmp_dir, "metadata.json")
+            with open(temp_file_path, 'w') as temp_file:
+                print({"uuid": self.uuid, "meta_description": self.description, "meta_name": self.name, "meta_start_time": datetime.now().isoformat()})
+                json.dump({"uuid": self.uuid, "meta_description": self.description, "meta_name": self.name, "meta_start_time": datetime.now().isoformat()}, temp_file)
 
     def query(self, *args, **kwargs):
         """
@@ -101,83 +118,127 @@ class Benchmark:
             raise Exception("Invalid file mode. Mode must be \"r\" to send queries.")
 
         return self.session.query(*args, **kwargs)
+    
+    def read_checkpoints(self):
+        metadata_file_path = os.path.join(self.tmp_dir, "metadata.json")
+        with open(metadata_file_path, 'r') as metadata_file:
+            metadata = json.load(metadata_file)
+            metadata["meta_start_time"] = datetime.fromisoformat(metadata["meta_start_time"])
+        
+        measurements = []
+        for filename in os.listdir(self.tmp_dir):
+            if filename.endswith('.pkl'):
+                file_path = os.path.join(self.tmp_dir, filename)
+                with open(file_path, 'rb') as temp_file:
+                    measurement = pickle.load(temp_file)
+                    measurements.append(measurement)
+            
+        groups = []    
+        for identifier in set([(measurement.measurement_type, measurement.measurement_description, measurement.measured_method_name) for measurement in measurements]):
+            print(identifier)
+            groups.append([measurement for measurement in measurements if (measurement.measurement_type, measurement.measurement_description, measurement.measured_method_name) == identifier])
+            
+        processed_measurements = []
+        for group in groups:
+            if len(group) == 0:
+                continue
+            elif len(group) == 1:
+                processed_measurements.append(group[0])
+            else:
+                # Combine measurements
+                combined_measurement = group[0]
+                value = combined_measurement.measurement_data
+                if type(value) in [int, float]:
+                    for measurement in group[1:]:
+                        value += measurement.measurement_data
+                elif type(value) == str:
+                    value = json.loads(value)
+                    for measurement in group[1:]:
+                        next_value = json.loads(measurement.measurement_data)
+                        for key in next_value:
+                            if key in value:
+                                value[key] += next_value[key]
+                            else:
+                                value[key] = next_value[key]
+                                
+                    value["timestamps"] = sorted(value["timestamps"])
+                    for key in value:
+                        if key != "timestamps":
+                            value[key] = [value[key][value["timestamps"].index(timestamp)] for timestamp in value["timestamps"]]
+                    value = json.dumps(value, indent=4, default=str)
+                else:
+                    raise Exception(f"Cannot combine measurements of type {type(value)}.")
+                combined_measurement.measurement_data = value
+                combined_measurement.measurement_datetime = datetime.now()
+                processed_measurements.append(combined_measurement)
+                
+        return processed_measurements, metadata
+    
+    def write_checkpoints(self):
+        """
+        Write all measurements to the database.
+        """
+        measurements, metadata = self.read_checkpoints()
+        self.session.add(BenchmarkMetadata(uuid=metadata["uuid"],
+                                           meta_description=metadata["meta_description"],
+                                           meta_name=metadata["meta_name"],
+                                           meta_start_time=metadata["meta_start_time"]))
+        
+        for measurement in measurements:
+            self.session.add(measurement)
+
+        self.session.commit()
+        print(f"All measurements committed to database.")
 
     def close(self):
         """
         Close the Benchmark object.
-        For Benchmark objects used in mode 'r', the SQLalchemy session is closed.
-        For the remaining modes the session is closed and all collected metrics are written to the database file.        
+        All temporary JSON files are read, their data is written to the database, and the temporary directory is deleted.
         """
-
+        print(f"Closing Benchmark. Processing {self.log_idx} logged measurements...")
         if self.mode == 'r':
             self.session.close()
-        elif self.use_database_thread:
-            self.close_event.set()
-            self._db_thread.join()
         else:
-            engine = create_engine('sqlite+pysqlite:///' + self.db_file)
-            Base.metadata.create_all(engine)
-            Session = sessionmaker(bind=engine)
-            session = Session()
-            session.add(BenchmarkMetadata(uuid=self.uuid,
-                                        meta_description=self.description,
-                                        meta_name=self.name,
-                                        meta_start_time=datetime.now()))
-            session.commit()
-
             try:
-                while not self.queue.empty():
-                    measurement = self.queue.get()
-                    session.add(measurement)
-                    log_staged = True
-                    
-                session.commit()
+                self.write_checkpoints()
+                print(f"All measurements committed to database.")
+            except Exception as e:
+                print(f"Error during closing: {e}")
             finally:
-                session.close()
+                # Clean up temporary files and directory
+                shutil.rmtree(self.tmp_dir, ignore_errors=True)
+                os.rmdir(self.tmp_dir)
+                print(f"Temporary directory '{self.tmp_dir}' deleted.")
+                self.session.close()
             
 
-    def _database_thread_func(self):
-        """The function that manages the threading."""
-        engine = create_engine('sqlite+pysqlite:///' + self.db_file)
-        Base.metadata.create_all(engine)
-        Session = sessionmaker(bind=engine)
-        session = Session()
-        session.add(BenchmarkMetadata(uuid=self.uuid,
-                                      meta_description=self.description,
-                                      meta_name=self.name,
-                                      meta_start_time=datetime.now()))
-        session.commit()
-
-        try:
-            while True:
-                log_staged = False
-                while not self.queue.empty():
-                    sleep(0)
-                    measurement = self.queue.get()
-                    #measurement.measurement_data = str(measurement.measurement_data)
-                    session.add(measurement)
-                    log_staged = True
-                if log_staged:
-                    session.commit()
-                if self.close_event.isSet() and self.queue.empty():
-                    break
-                sleep(0)
-        finally:
-            session.close()
-
     def log(self, description, measure_type, value, unit='', method_name=""):
-        measurement = Measurement(measurement_datetime=datetime.now(),
-                                  uuid=self.uuid,
-                                  measurement_description=description,
-                                  measurement_type=measure_type,
-                                  measurement_data=value,
-                                  measurement_unit=unit,
-                                  measured_method_name=method_name)
-        self.queue.put(measurement)
+        """
+        Logs a measurement into a temporary Pickle file in the tmp directory.
+        """
+        measurement = Measurement(
+            measurement_datetime=datetime.now(),
+            uuid=self.uuid,
+            measurement_description=description,
+            measurement_type=measure_type,
+            measurement_data=value,
+            measurement_unit=unit,
+            measured_method_name=method_name
+        )
+
+        temp_file_path = os.path.join(self.tmp_dir, f"log_{self.log_idx}.pkl")
+        with open(temp_file_path, 'wb') as temp_file:
+            pickle.dump(measurement, temp_file)
+
+        self.log_idx += 1
+        print(f"Logged measurement {self.log_idx} to temporary file: {temp_file_path}")
+  
 
 class VisualizationBenchmark(Benchmark):
-    def __init__(self, db_file):
-        super().__init__(db_file, mode='r')
+    def __init__(self, db_file, tmp_dir=None):
+        if tmp_dir is None:
+            tmp_dir = "umlaut_tmp"
+        super().__init__(db_file, mode='r', tmp_dir=tmp_dir)
 
     def query_all_meta(self):
         """
@@ -245,3 +306,4 @@ class VisualizationBenchmark(Benchmark):
         joined_df = joined_df.merge(measurement_df, on='id')
 
         return joined_df.set_index('id')
+
