@@ -15,7 +15,7 @@ import json
 from torch import cuda
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlShutdown, nvmlDeviceGetUtilizationRates, nvmlDeviceGetPowerUsage
 
-CHECKPOINT_INTERVAL_DEFAULT = 250
+CHECKPOINT_INTERVAL_DEFAULT = 5
 
 class BenchmarkSupervisor:
     """A supervisor object managing all supervised metrics

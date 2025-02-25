@@ -161,10 +161,13 @@ class Benchmark:
                             else:
                                 value[key] = next_value[key]
                                 
-                    value["timestamps"] = sorted(value["timestamps"])
                     for key in value:
                         if key != "timestamps":
-                            value[key] = [value[key][value["timestamps"].index(timestamp)] for timestamp in value["timestamps"]]
+                            #value[key] = [value[key][value["timestamps"].index(timestamp)] for timestamp in value["timestamps"]]
+                            value[key] = [item[1] for item in sorted(list(zip(value["timestamps"], value[key])), key = lambda x: x[0])]
+
+                            
+                    value["timestamps"] = sorted(value["timestamps"])
                     value = json.dumps(value, indent=4, default=str)
                 else:
                     raise Exception(f"Cannot combine measurements of type {type(value)}.")
@@ -207,7 +210,8 @@ class Benchmark:
             finally:
                 # Clean up temporary files and directory
                 shutil.rmtree(self.tmp_dir, ignore_errors=True)
-                os.rmdir(self.tmp_dir)
+                if os.path.exists(self.tmp_dir):
+                    os.rmdir(self.tmp_dir, ignore_errors=True)
                 print(f"Temporary directory '{self.tmp_dir}' deleted.")
                 self.session.close()
             
