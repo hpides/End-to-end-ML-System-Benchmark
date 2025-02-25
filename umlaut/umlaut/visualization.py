@@ -27,6 +27,8 @@ class Visualizer:
             return self.plot_with_plotly()
         if self.plotting_backend == 'text':
             return self.plot_with_text()
+        if self.plotting_backend == 'csv':
+            return self.save_as_csv()
 
 class HyperparemeterVisualizer(Visualizer):
     def plot_with_plotly(self):
@@ -146,6 +148,22 @@ class TimebasedMultiLineChartVisualizer(Visualizer):
             print("MEAN: " + str(statistics.mean(self.measurements_lists[i])))
             print("ST DEV: " + str(statistics.stdev(self.measurements_lists[i])))
             print("===================================" + "\n")
+            
+    def save_as_csv(self):
+        filename=self.title+"umlaut_output.csv"
+        data = {
+            "times": [],
+            "measurements": [],
+            "labels": []
+        }
+        for i in range(len(self.df)):
+            data["times"].extend(self.timedelta_lists[i])
+            data["measurements"].extend(self.measurements_lists[i])
+            data["labels"].extend([self.linelabels[i]] * len(self.timedelta_lists[i]))
+            
+        df = pd.DataFrame(data)
+        df.to_csv(filename, index=False)
+            
 
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 18})
@@ -248,7 +266,12 @@ class BarVisualizer(Visualizer):
     def plot_with_text(self):
         print("Time needed for each operation: \n")
         print(self.df["measurement_data"])
-
+        
+    def save_as_csv(self):    
+        filename=self.title+"umlaut_output.csv"
+        df = self.df[["measurement_data", "x_labels"]]
+        df.rename(columns={"measurement_data": "measurements", "x_labels": "labels"}, inplace=True)
+        df.to_csv(filename, index=False)
 
     def plot_with_matplotlib(self):
         plt.rcParams.update({'font.size': 18})

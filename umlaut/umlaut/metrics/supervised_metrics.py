@@ -15,6 +15,8 @@ import json
 from torch import cuda
 from pynvml import nvmlInit, nvmlDeviceGetHandleByIndex, nvmlDeviceGetMemoryInfo, nvmlShutdown, nvmlDeviceGetUtilizationRates, nvmlDeviceGetPowerUsage
 
+CHECKPOINT_INTERVAL_DEFAULT = 250
+
 class BenchmarkSupervisor:
     """A supervisor object managing all supervised metrics
 
@@ -65,13 +67,14 @@ class BenchmarkSupervisor:
     def __meanwhile(self, tpe, finish_event):
         threads = []
         for metric in self.metrics:
+            metric.assign_benchmark(self.benchmark, self.method_name)
             if metric.needs_threading:
                 threads.append(tpe.submit(metric.meanwhile, finish_event))
         return threads
 
     def __log(self):
         for metric in self.metrics:
-            metric.log(self.benchmark, self.method_name)
+            metric.log()
 
 
 class Metric:
@@ -81,6 +84,10 @@ class Metric:
 
     def __init__(self, description):
         self.description = description
+        
+    def assign_benchmark(self, benchmark, method_name):
+        self.benchmark = benchmark
+        self.method_name = method_name
 
     def __lt__(self, other):
         return self.priority < other.priority
@@ -93,12 +100,15 @@ class Metric:
 
     def meanwhile(self, finish_event):
         pass
+    
+    def checkpoint(self):
+        pass
 
     def serialize(self):
         return self.data
         #return pickle.dumps(self.data)
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
         pass
 
 
@@ -121,8 +131,8 @@ class TimeMetric(Metric):
         after_time = time.perf_counter()
         self.data = after_time - self.before_time
 
-    def log(self, benchmark, decorated_method_name):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
+    def log(self):
+        self.benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=self.method_name)
 
 class GPUTimeMetric(Metric):
     """The metric object to measure the time taken for GPU execution
@@ -147,8 +157,8 @@ class GPUTimeMetric(Metric):
         elapsed_time = self.start_event.elapsed_time(self.end_event)  # Time in milliseconds
         self.data = elapsed_time / 1000.0  # Convert to seconds
 
-    def log(self, benchmark, decorated_method_name):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=decorated_method_name)
+    def log(self):
+        self.benchmark.log(self.description, self.measure_type, self.serialize(), unit='sec', method_name=self.method_name)
 
 class GPUMemoryMetric(Metric):
     """The metric object to measure GPU memory used in the execution
@@ -164,13 +174,15 @@ class GPUMemoryMetric(Metric):
     measure_type = 'gpumemory'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0, checkpoint_interval=CHECKPOINT_INTERVAL_DEFAULT):
         super().__init__(description)
         self.interval = interval
+        self.id = id
+        self.checkpoint_interval = checkpoint_interval
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)
         self.timestamps = []
         self.measurements = []
 
@@ -178,7 +190,20 @@ class GPUMemoryMetric(Metric):
         while not finish_event.isSet():
             self.timestamps.append(datetime.now())
             self.measurements.append(nvmlDeviceGetMemoryInfo(self.handle).used / (2 ** 20))
+            
+            if len(self.measurements) >= self.checkpoint_interval:
+                self.checkpoint()
+                
             time.sleep(self.interval)
+            
+    def checkpoint(self):
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+        self.log()
+        self.timestamps = []
+        self.measurements = []
 
     def after(self):
         nvmlShutdown()
@@ -187,9 +212,11 @@ class GPUMemoryMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
+        if len(self.timestamps) == 0:
+            return
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=self.method_name)
 
 class MemoryMetric(Metric):
     """The metric object to measure memory used in the execution
@@ -205,9 +232,10 @@ class MemoryMetric(Metric):
     measure_type = 'memory'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, checkpoint_interval=CHECKPOINT_INTERVAL_DEFAULT):
         super().__init__(description)
         self.interval = interval
+        self.checkpoint_interval = checkpoint_interval
 
     def before(self):
         self.process = psutil.Process(os.getpid())
@@ -223,6 +251,18 @@ class MemoryMetric(Metric):
             except psutil.NoSuchProcess:
                 finish_event.set()
                 break
+            
+            if len(self.measurements) >= self.checkpoint_interval:
+                self.checkpoint()
+            
+    def checkpoint(self):
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+        self.log()
+        self.timestamps = []
+        self.measurements = []
 
     def after(self):
         self.data = {
@@ -230,9 +270,11 @@ class MemoryMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
+        if len(self.timestamps) == 0:
+            return
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, json_data, unit="MiB", method_name=self.method_name)
         
 class EnergyMetric(Metric):
     """The metric object to measure energy used in the execution
@@ -264,10 +306,10 @@ class EnergyMetric(Metric):
             self.meter.end()
             self.data = sum(self.meter.result.pkg)
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='µJ', method_name=decorated_method_name)
+            self.benchmark.log(self.description, self.measure_type, json_data, unit='µJ', method_name=self.method_name)
 
 class PowerMetric(Metric):
     """The metric object to measure power used in the execution
@@ -321,10 +363,10 @@ class PowerMetric(Metric):
                 'interval' : self.interval
             }
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
         if self.successful:
             json_data = json.dumps(self.serialize(), indent=4, default=str)
-            benchmark.log(self.description, self.measure_type, json_data, unit='Watt', method_name=decorated_method_name)
+            self.benchmark.log(self.description, self.measure_type, json_data, unit='Watt', method_name=self.method_name)
 
 class LatencyMetric(Metric):
     """The metric object to measure latency of the pipeline function
@@ -359,8 +401,8 @@ class LatencyMetric(Metric):
         """
         self.num_entries = num_entries
 
-    def log(self, benchmark, decorated_method_name):
-        benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry', method_name=decorated_method_name)
+    def log(self):
+        self.benchmark.log(str(self.description + "\n (#Entries = " + str(self.num_entries) + ")"), self.measure_type, self.serialize(), unit='Seconds/entry', method_name=self.method_name)
 
 class ThroughputMetric(Metric):
     """The metric object to measure throughput of the pipeline function
@@ -394,7 +436,7 @@ class ThroughputMetric(Metric):
         self.num_entries = num_entries
 
     def log(self, benchmark, decorated_method_name):
-        benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second', method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, self.serialize(), unit='Entries/second', method_name=self.method_name)
 
 class CPUMetric(Metric):
     """The metric object to measure CPU usage of the running Python instance in percent
@@ -410,9 +452,11 @@ class CPUMetric(Metric):
     measure_type = 'cpu'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, checkpoint_interval=CHECKPOINT_INTERVAL_DEFAULT):
         super().__init__(description)
         self.interval = interval
+        self.checkpoint_interval = checkpoint_interval
+        self.starting_point = 2
 
     def before(self):
         self.process = psutil.Process(os.getpid())
@@ -427,16 +471,31 @@ class CPUMetric(Metric):
             except psutil.NoSuchProcess:
                 finish_event.set()
                 break
+            
+            if len(self.measurements) >= self.checkpoint_interval:
+                self.checkpoint()
 
     def after(self):
         self.data = {
-            'timestamps': self.timestamps[2:],
-            'measurements': self.measurements[2:]
+            'timestamps': self.timestamps[self.starting_point:],
+            'measurements': self.measurements[self.starting_point:]
         }
+        
+    def checkpoint(self):
+        self.data = {
+            'timestamps': self.timestamps[self.starting_point:],
+            'measurements': self.measurements[self.starting_point:]
+        }
+        self.log()
+        self.timestamps = []
+        self.measurements = []
+        self.starting_point = 0
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
+        if len(self.timestamps) == 0:
+            return
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=self.method_name)
 
 class GPUMetric(Metric):
     """The metric object to measure GPU usage of the running instance in percent
@@ -452,13 +511,15 @@ class GPUMetric(Metric):
     measure_type = 'gpu'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0, checkpoint_interval=CHECKPOINT_INTERVAL_DEFAULT):
         super().__init__(description)
         self.interval = interval
+        self.id = id
+        self.checkpoint_interval = checkpoint_interval
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)  # You may want to parameterize the GPU index
         self.timestamps = []
         self.measurements = []
 
@@ -468,6 +529,9 @@ class GPUMetric(Metric):
             utilization = nvmlDeviceGetUtilizationRates(self.handle)
             self.measurements.append(utilization.gpu)
             finish_event.wait(self.interval)  # This is better for clean exit
+            
+            if len(self.measurements) >= self.checkpoint_interval:
+                self.checkpoint()
 
     def after(self):
         nvmlShutdown()
@@ -476,9 +540,20 @@ class GPUMetric(Metric):
             'measurements': self.measurements
         }
 
-    def log(self, benchmark, decorated_method_name):
+    def checkpoint(self):
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+        self.log()
+        self.timestamps = []
+        self.measurements = []
+        
+    def log(self):
+        if len(self.timestamps) == 0:
+            return
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, json_data, unit="%", method_name=self.method_name)
 
 class GPUPowerMetric(Metric):
     """The metric object to measure GPU power usage of the running instance in watts
@@ -494,13 +569,15 @@ class GPUPowerMetric(Metric):
     measure_type = 'gpupower'
     needs_threading = True
 
-    def __init__(self, description, interval=1):
+    def __init__(self, description, interval=1, id=0, checkpoint_interval=CHECKPOINT_INTERVAL_DEFAULT):
         super().__init__(description)
         self.interval = interval
+        self.id = id
+        self.checkpoint_interval = checkpoint_interval
 
     def before(self):
         nvmlInit()
-        self.handle = nvmlDeviceGetHandleByIndex(0)  # You may want to parameterize the GPU index
+        self.handle = nvmlDeviceGetHandleByIndex(self.id)  # You may want to parameterize the GPU index
         self.timestamps = []
         self.measurements = []
 
@@ -510,6 +587,9 @@ class GPUPowerMetric(Metric):
             power_usage = nvmlDeviceGetPowerUsage(self.handle) / 1000.0  # Convert from milliwatts to watts
             self.measurements.append(power_usage)
             finish_event.wait(self.interval)  # This is better for clean exit
+            
+            if len(self.measurements) >= self.checkpoint_interval:
+                self.checkpoint()
 
     def after(self):
         nvmlShutdown()
@@ -517,8 +597,19 @@ class GPUPowerMetric(Metric):
             'timestamps': self.timestamps,
             'measurements': self.measurements
         }
+        
+    def checkpoint(self):
+        self.data = {
+            'timestamps': self.timestamps,
+            'measurements': self.measurements
+        }
+        self.log()
+        self.timestamps = []
+        self.measurements = []
 
-    def log(self, benchmark, decorated_method_name):
+    def log(self):
+        if len(self.timestamps) == 0:
+            return
         json_data = json.dumps(self.serialize(), indent=4, default=str)
-        benchmark.log(self.description, self.measure_type, json_data, unit="W", method_name=decorated_method_name)
+        self.benchmark.log(self.description, self.measure_type, json_data, unit="W", method_name=self.method_name)
 
